@@ -1,0 +1,12 @@
+{
+  "name": "collector",
+  "description": "A generic log collector that can be used as a CLI binary or an imported package.",
+  "keywords": ["collector", "log"],
+  "author": "Coleton Pierson <coleton.pierson@thoronic.com>",
+  "version": "0.1.0",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ThoronicLLC/collector/issues"
+  },
+  "homepage": "https://github.com/ThoronicLLC/collector"
+}
