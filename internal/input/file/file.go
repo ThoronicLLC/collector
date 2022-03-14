@@ -56,8 +56,8 @@ func (input *fileInput) Run(errorHandler core.ErrorHandler, state core.State, pr
 			// Create temp file
 			tmpFile, err := core.NewTmpWriter()
 			if err != nil {
-				errorHandler(true, err)
-				return
+				errorHandler(false, fmt.Errorf("issue opening a new temp file writer: %s", err))
+				continue
 			}
 
 			// Copy current state to a new object for modification
@@ -82,17 +82,12 @@ func (input *fileInput) Run(errorHandler core.ErrorHandler, state core.State, pr
 				newState = updateFileState(v, newState, offset)
 			}
 
-			// Get results file name
+			// Get results file name and size
 			path := tmpFile.CurrentFile().Name()
-			size := tmpFile.Size()
+			linesWritten := tmpFile.WriteCount
 			err = tmpFile.Close()
 			if err != nil {
 				errorHandler(false, fmt.Errorf("issue closing file: %s", err))
-				continue
-			}
-
-			// Just continue if there is no new data to process
-			if size == 0 {
 				continue
 			}
 
@@ -103,10 +98,12 @@ func (input *fileInput) Run(errorHandler core.ErrorHandler, state core.State, pr
 				continue
 			}
 
+			// Setup pipeline results for next stage
 			result := core.PipelineResults{
-				FilePath:   path,
-				State:      newStateBytes,
-				RetryCount: 0,
+				FilePath:    path,
+				ResultCount: linesWritten,
+				State:       newStateBytes,
+				RetryCount:  0,
 			}
 
 			// Pipe results to next stage

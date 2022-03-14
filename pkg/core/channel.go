@@ -1,7 +1,8 @@
 package core
 
 type PipelineResults struct {
-	FilePath   string
-	State      State
-	RetryCount int
+	FilePath    string
+	ResultCount int
+	State       State
+	RetryCount  int
 }

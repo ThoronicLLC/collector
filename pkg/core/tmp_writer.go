@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -63,7 +64,7 @@ func (l *TmpWriter) write(p []byte) (n int, err error) {
 	}
 
 	// Append newline to byte
-	pStringWithNewline := string(p) + "\n"
+	pStringWithNewline := strings.TrimSpace(string(p)) + "\n"
 	l.WriteCount += 1
 
 	// Write new line

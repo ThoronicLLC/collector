@@ -20,6 +20,7 @@ type Manager struct {
 	errorHandler core.ErrorHandler
 	processPipe  chan core.PipelineResults
 	outputPipe   chan core.PipelineResults
+	statePipe    chan core.State
 }
 
 type Config struct {
@@ -33,11 +34,12 @@ type Config struct {
 }
 
 type Status struct {
-	Running                  bool
-	Errors                   []error
-	LastSuccessfulRun        time.Time
-	HasErrors                bool
-	ErrorsSinceSuccessfulRun int
+	Running                   bool      `json:"running"`
+	Errors                    []error   `json:"errors"`
+	LastSuccessfulRun         time.Time `json:"last_successful_run"`
+	LastSuccessfulResultCount int       `json:"last_successful_result_count"`
+	HasErrors                 bool      `json:"has_errors"`
+	ErrorsSinceSuccessfulRun  int       `json:"errors_since_successful_run"`
 }
 
 func New(config Config) *Manager {
@@ -52,15 +54,16 @@ func New(config Config) *Manager {
 		loadState:   config.LoadState,
 		processPipe: make(chan core.PipelineResults, 20),
 		outputPipe:  make(chan core.PipelineResults, 20),
+		statePipe:   make(chan core.State, 20),
 	}
 
 	// Add a local error handler that also updated internal status
-	var localErrorHandler core.ErrorHandler = func(critical bool, err error) {
-		if err != nil {
-			config.ErrorHandler(critical, err)
-		}
-		mng.statusHandler(err)
-	}
+	localErrorHandler := core.ErrorHandler(func(critical bool, err error) {
+		config.ErrorHandler(critical, err)
+		mng.failureStatus(err)
+	})
+
+	// Set manager error handler to local handler
 	mng.errorHandler = localErrorHandler
 
 	return mng
@@ -91,6 +94,13 @@ func (manager *Manager) Run() {
 	go func() {
 		defer wg.Done()
 		manager.outputHandler()
+		close(manager.statePipe)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		manager.stateHandler()
 	}()
 
 	wg.Wait()
@@ -118,31 +128,50 @@ func (manager *Manager) processHandler(errorHandler core.ErrorHandler) {
 			break
 		}
 
+		// If the input returned 0 results, update state and continue
+		if res.ResultCount == 0 {
+			manager.successfulStatus(0)
+			manager.statePipe <- res.State
+			continue
+		}
+
 		// Setup current file tracker
 		currentFile := res.FilePath
-		var err error
+		currentCount := res.ResultCount
+		tmpWriter, err := core.NewTmpWriter()
+		if err != nil {
+			errorHandler(false, err)
+			continue
+		}
 
 		// Loop through and run processors
 		for _, v := range manager.processors {
-			// Set old results for future deleting
-			oldResults := currentFile
-
-			currentFile, err = v.Process(currentFile)
+			err := v.Process(currentFile, tmpWriter)
 			if err != nil {
 				errorHandler(false, err)
 				break
 			}
 
 			// Delete old results after each process step
-			err = os.Remove(oldResults)
+			err = os.Remove(currentFile)
 			if err != nil {
 				errorHandler(false, err)
+				break
+			}
+
+			currentFile = tmpWriter.CurrentFile().Name()
+			currentCount = tmpWriter.WriteCount
+			err = tmpWriter.Rotate()
+			if err != nil {
+				errorHandler(false, err)
+				break
 			}
 		}
 
 		manager.outputPipe <- core.PipelineResults{
-			FilePath: currentFile,
-			State:    res.State,
+			FilePath:    currentFile,
+			ResultCount: currentCount,
+			State:       res.State,
 		}
 	}
 }
@@ -194,17 +223,29 @@ func (manager *Manager) outputHandler() {
 			manager.errorHandler(false, err)
 		}
 
+		// Update status
+		manager.successfulStatus(res.ResultCount)
+
 		// Save state
-		err = manager.saveState(manager.id, res.State)
+		manager.statePipe <- res.State
+	}
+}
+
+func (manager *Manager) stateHandler() {
+	for {
+		res, ok := <-manager.statePipe
+		if !ok {
+			log.Debugf("state handler pipeline closed for: %s", manager.id)
+			break
+		}
+
+		// Save state
+		err := manager.saveState(manager.id, res)
 		if err != nil {
 			// This should never really happen. If we can't save state, we need to kill the instance or else we will get
 			// duplicates
-			manager.errorHandler(true, err)
-			// TODO: Exit
+			manager.errorHandler(false, err)
 			continue
 		}
-
-		// Update status
-		manager.errorHandler(false, nil)
 	}
 }

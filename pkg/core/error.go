@@ -1,3 +1,3 @@
 package core
 
-type ErrorHandler func(critical bool, err error)
+type ErrorHandler func(criticalFailure bool, err error)

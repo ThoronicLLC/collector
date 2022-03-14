@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ThoronicLLC/collector/pkg/core"
 	log "github.com/sirupsen/logrus"
+	"io"
 	"strings"
 )
 
@@ -34,30 +35,24 @@ func Handler() core.ProcessHandler {
 	}
 }
 
-func (processor *celProcessor) Process(inputFile string) (string, error) {
+func (processor *celProcessor) Process(inputFile string, writer io.Writer) error {
 	// Unmarshal config
 	var conf celConfig
 	err := json.Unmarshal(processor.config, &conf)
 	if err != nil {
-		return "", fmt.Errorf("issue unmarshalling CEL config: %s", err)
+		return fmt.Errorf("issue unmarshalling CEL config: %s", err)
 	}
 
 	// Validate config
 	err = validate(conf)
 	if err != nil {
-		return "", fmt.Errorf("issue validating CEL config: %s", err)
+		return fmt.Errorf("issue validating CEL config: %s", err)
 	}
 
 	// Set action
 	currentAction := ActionAccept
 	if conf.Action == string(ActionReject) {
 		currentAction = ActionReject
-	}
-
-	// Create writer
-	tmpWriter, err := core.NewTmpWriter()
-	if err != nil {
-		return "", fmt.Errorf("issue creating tmp writer: %s", err)
 	}
 
 	// Use the file reader utility to pass our function
@@ -87,22 +82,16 @@ func (processor *celProcessor) Process(inputFile string) (string, error) {
 		// If the result was true and the action is accept, write log
 		// If the result was false and the action is reject, write log
 		if result && currentAction == ActionAccept {
-			_, _ = tmpWriter.WriteString(s)
+			_, _ = writer.Write([]byte(s))
 		} else if !result && currentAction == ActionReject {
-			_, _ = tmpWriter.WriteString(s)
+			_, _ = writer.Write([]byte(s))
 		}
 	})
 	if err != nil {
-		return "", fmt.Errorf("issue reading file: %s", err)
+		return fmt.Errorf("issue reading file: %s", err)
 	}
 
-	currentFile := tmpWriter.CurrentFile().Name()
-	err = tmpWriter.Close()
-	if err != nil {
-		return "", fmt.Errorf("issue closing file: %s", err)
-	}
-
-	return currentFile, nil
+	return nil
 }
 
 func validate(config celConfig) error {

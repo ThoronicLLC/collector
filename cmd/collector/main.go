@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/ThoronicLLC/collector/pkg/collector"
 	"github.com/ThoronicLLC/collector/pkg/core"
@@ -38,21 +39,11 @@ func main() {
 	fileConfig := &core.Config{
 		Input: core.PluginConfig{
 			Name:     "file",
-			Settings: []byte(`{"path":"/tmp/test/*.log", "schedule":15}`),
-		},
-		Processors: []core.PluginConfig{},
-		Outputs: []core.PluginConfig{
-			{Name: "stdout", Settings: nil},
-		},
-	}
-
-	// Load configs
-	fileConfig2 := &core.Config{
-		Input: core.PluginConfig{
-			Name:     "file",
 			Settings: []byte(`{"path":"/tmp/test2/*.log", "schedule":15}`),
 		},
-		Processors: []core.PluginConfig{},
+		Processors: []core.PluginConfig{
+			{Name: "cel", Settings: []byte(`{"rules": ["has(event.hello)", "has(event.key)", "has(event.joe)"], "action": "reject"}`)},
+		},
 		Outputs: []core.PluginConfig{
 			{Name: "stdout", Settings: nil},
 		},
@@ -60,7 +51,6 @@ func main() {
 
 	configs := make([]*core.Config, 0)
 	configs = append(configs, fileConfig)
-	configs = append(configs, fileConfig2)
 
 	// Setup context wait group go routine for closing application
 	for i, v := range configs {
@@ -84,7 +74,20 @@ func main() {
 				log.Errorf("unable to find status for instance %s: %s", "file", err)
 				continue
 			}
-			log.Infof("last successful run: %s", status.LastSuccessfulRun.String())
+			if status != nil {
+				statusBytes, _ := json.Marshal(status)
+				log.Infof("current status: %s", string(statusBytes))
+			}
+		}
+	}()
+
+	go func() {
+		for {
+			<-time.After(45 * time.Second)
+			state, ok := stateMap.Load("file_0")
+			if ok {
+				log.Infof("current state: %s", string(state))
+			}
 		}
 	}()
 
