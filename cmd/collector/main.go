@@ -39,7 +39,7 @@ func main() {
 	fileConfig := &core.Config{
 		Input: core.PluginConfig{
 			Name:     "file",
-			Settings: []byte(`{"path":"/tmp/test2/*.log", "schedule":15}`),
+			Settings: []byte(`{"path":"/tmp/test2/*.log", "schedule":15, "delete": true}`),
 		},
 		Processors: []core.PluginConfig{
 			{Name: "cel", Settings: []byte(`{"rules": ["has(event.hello)", "has(event.key)", "has(event.joe)"], "action": "reject"}`)},

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/ThoronicLLC/collector/pkg/core"
 	log "github.com/sirupsen/logrus"
+	"os"
 	"time"
 )
 
@@ -16,7 +17,6 @@ type fileConfig struct {
 }
 
 type fileInput struct {
-	ID         string
 	Config     []byte
 	ctx        context.Context
 	cancelFunc context.CancelFunc
@@ -78,8 +78,15 @@ func (input *fileInput) Run(errorHandler core.ErrorHandler, state core.State, pr
 					continue
 				}
 
-				// Update file state
-				newState = updateFileState(v, newState, offset)
+				// If delete is enabled, remove the file. If not, update file state to keep track of data already processed
+				if conf.Delete {
+					err = os.Remove(v)
+					if err != nil {
+						errorHandler(false, err)
+					}
+				} else {
+					newState = updateFileState(v, newState, offset)
+				}
 			}
 
 			// Get results file name and size
