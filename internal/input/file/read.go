@@ -22,6 +22,8 @@ func copyFromFilePosition(path string, position int64, writer io.Writer) (int64,
 		return 0, fmt.Errorf("issue opening file: %s", err)
 	}
 
+	defer fs.Close()
+
 	fileStats, err := fs.Stat()
 	if err != nil {
 		return 0, fmt.Errorf("issue stating file: %s", err)

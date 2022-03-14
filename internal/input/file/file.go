@@ -84,9 +84,15 @@ func (input *fileInput) Run(errorHandler core.ErrorHandler, state core.State, pr
 
 			// Get results file name
 			path := tmpFile.CurrentFile().Name()
+			size := tmpFile.Size()
 			err = tmpFile.Close()
 			if err != nil {
 				errorHandler(false, fmt.Errorf("issue closing file: %s", err))
+				continue
+			}
+
+			// Just continue if there is no new data to process
+			if size == 0 {
 				continue
 			}
 
