@@ -85,12 +85,22 @@ func (c *Collector) Start(id string, config *core.Config) error {
 
 		// Setup processors
 		processors := make([]core.Processor, 0)
+		for _, v := range config.Processors {
+			if processHandler, exists := c.registeredProcessors[v.Name]; !exists {
+				c.errorHandler(true, fmt.Errorf("invalid processor type: %s", v.Name))
+				return
+			} else {
+				configuredProcessor := processHandler(v.Settings)
+				processors = append(processors, configuredProcessor)
+			}
+		}
 
 		// Setup outputs
 		outputs := make([]core.Output, 0)
 		for _, v := range config.Outputs {
 			if outputHandler, exists := c.registeredOutputs[v.Name]; !exists {
 				c.errorHandler(true, fmt.Errorf("invalid output type: %s", v.Name))
+				return
 			} else {
 				configuredOutput := outputHandler(v.Settings)
 				outputs = append(outputs, configuredOutput)
@@ -113,7 +123,7 @@ func (c *Collector) Start(id string, config *core.Config) error {
 
 		// Run instance with an instance manager
 		instance.Run()
-		log.Infof("closing instance with id: %s", id)
+		log.Infof("gracefully stopped instance with id: %s", id)
 	}()
 
 	// Blocking
@@ -128,7 +138,7 @@ func (c *Collector) Start(id string, config *core.Config) error {
 func (c *Collector) Stop(id string) error {
 	// Check if an instance already exists
 	if currentInstance, exists := c.runningInstances[id]; !exists {
-		return errors.New("an instance with that ID does not exist")
+		return fmt.Errorf("an instance with that ID does not exist")
 	} else {
 		currentInstance.Stop()
 	}
@@ -139,7 +149,7 @@ func (c *Collector) Stop(id string) error {
 func (c *Collector) Status(id string) (*manager.Status, error) {
 	// Check if an instance exists
 	if currentInstance, exists := c.runningInstances[id]; !exists {
-		return nil, errors.New("an instance with that ID does not exist")
+		return nil, fmt.Errorf("an instance with that ID does not exist")
 	} else {
 		return currentInstance.Status(), nil
 	}
