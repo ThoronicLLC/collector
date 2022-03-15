@@ -7,9 +7,9 @@ assignees: ''
 
 ---
 
-## User Story
+## Feature
 
-As a [role], I want to [actions] (so that [benefit]).
+I would like [feature]
 
 ## Acceptance Criteria
 
