@@ -15,12 +15,13 @@ import (
 var _ io.WriteCloser = (*TmpWriter)(nil)
 
 type TmpWriter struct {
-	size         int64
-	file         *os.File
-	fileOpen     bool
-	mu           sync.Mutex
-	previousFile *os.File
-	WriteCount   int
+	size          int64
+	file          *os.File
+	fileOpen      bool
+	mu            sync.Mutex
+	previousFile  *os.File
+	previousCount int
+	WriteCount    int
 
 	millCh    chan bool
 	startMill sync.Once
@@ -65,11 +66,11 @@ func (l *TmpWriter) write(p []byte) (n int, err error) {
 
 	// Append newline to byte
 	pStringWithNewline := strings.TrimSpace(string(p)) + "\n"
-	l.WriteCount += 1
 
 	// Write new line
 	n, err = l.file.Write([]byte(pStringWithNewline))
 	l.size += int64(n)
+	l.WriteCount += 1
 
 	return n, err
 }
@@ -99,6 +100,7 @@ func (l *TmpWriter) close() error {
 	}
 
 	l.previousFile = l.file
+	l.previousCount = l.WriteCount
 	l.file = nil
 	l.fileOpen = false
 	return err
@@ -106,10 +108,19 @@ func (l *TmpWriter) close() error {
 
 // Rotate causes TmpWriter to close the existing log file and immediately create a
 // new one.
-func (l *TmpWriter) Rotate() error {
+func (l *TmpWriter) Rotate() (int, string, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	return l.rotate()
+
+	// Get file name and write count
+	rotatedFileName := l.file.Name()
+	rotatedWriteCount := l.WriteCount
+
+	// Do not rotate if there is no writes to the file
+	if rotatedWriteCount > 0 {
+		return rotatedWriteCount, rotatedFileName, l.rotate()
+	}
+	return rotatedWriteCount, rotatedFileName, nil
 }
 
 // Size returns the current file size
@@ -184,6 +195,11 @@ func (l *TmpWriter) CurrentFile() *os.File {
 // PreviousFile returns previous log file pointer
 func (l *TmpWriter) PreviousFile() *os.File {
 	return l.previousFile
+}
+
+// PreviousCount returns previous file write count
+func (l *TmpWriter) PreviousCount() int {
+	return l.previousCount
 }
 
 // DeleteCurrentFile deletes the current log file and update struct
