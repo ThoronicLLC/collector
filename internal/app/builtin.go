@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/ThoronicLLC/collector/internal/input/file"
+	"github.com/ThoronicLLC/collector/internal/input/pubsub"
 	"github.com/ThoronicLLC/collector/internal/output/s3"
 	"github.com/ThoronicLLC/collector/internal/output/stdout"
 	"github.com/ThoronicLLC/collector/internal/processor/cel"
@@ -10,7 +11,8 @@ import (
 
 func AddInternalInputs() map[string]core.InputHandler {
 	return map[string]core.InputHandler{
-		"file": file.Handler(),
+		"file":   file.Handler(),
+		"pubsub": pubsub.Handler(),
 	}
 }
 
