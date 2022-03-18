@@ -2,10 +2,11 @@ package app
 
 import (
 	"github.com/ThoronicLLC/collector/internal/input/file"
-	"github.com/ThoronicLLC/collector/internal/input/pubsub"
+	pubsubin "github.com/ThoronicLLC/collector/internal/input/pubsub"
 	"github.com/ThoronicLLC/collector/internal/input/syslog"
 	"github.com/ThoronicLLC/collector/internal/output/gcs"
 	"github.com/ThoronicLLC/collector/internal/output/log_analytics"
+	pubsubout "github.com/ThoronicLLC/collector/internal/output/pubsub"
 	"github.com/ThoronicLLC/collector/internal/output/s3"
 	"github.com/ThoronicLLC/collector/internal/output/stdout"
 	"github.com/ThoronicLLC/collector/internal/processor/cel"
@@ -15,7 +16,7 @@ import (
 func AddInternalInputs() map[string]core.InputHandler {
 	return map[string]core.InputHandler{
 		"file":           file.Handler(),
-		"pubsub":         pubsub.Handler(),
+		"pubsub":         pubsubin.Handler(),
 		syslog.InputName: syslog.Handler(),
 	}
 }
@@ -32,5 +33,6 @@ func AddInternalOutputs() map[string]core.OutputHandler {
 		"s3":                     s3.Handler(),
 		gcs.OutputName:           gcs.Handler(),
 		log_analytics.OutputName: log_analytics.Handler(),
+		pubsubout.OutputName:     pubsubout.Handler(),
 	}
 }
