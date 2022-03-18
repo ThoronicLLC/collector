@@ -205,14 +205,15 @@ func (manager *Manager) outputHandler() {
 		//
 		// Note: in order to guarantee at least once delivery, only one output should be set for each instance
 		if outputError && !anyWritten && res.RetryCount < 3 {
-			<-time.After(60 * time.Second)
-
-			// Retry
+			log.Debugf("output failed to process %d results for: %s; retrying...", res.ResultCount, manager.id)
 			newRes := res
 			newRes.RetryCount = res.RetryCount + 1
 			manager.outputPipe <- newRes
-
 			continue
+		} else if outputError {
+			log.Debugf("output failed to process %d results for: %s", res.ResultCount, manager.id)
+			manager.failureStatus(err)
+			break
 		}
 
 		// Delete old results

@@ -5,6 +5,7 @@ import (
 	"github.com/ThoronicLLC/collector/internal/input/pubsub"
 	"github.com/ThoronicLLC/collector/internal/input/syslog"
 	"github.com/ThoronicLLC/collector/internal/output/gcs"
+	"github.com/ThoronicLLC/collector/internal/output/log_analytics"
 	"github.com/ThoronicLLC/collector/internal/output/s3"
 	"github.com/ThoronicLLC/collector/internal/output/stdout"
 	"github.com/ThoronicLLC/collector/internal/processor/cel"
@@ -27,8 +28,9 @@ func AddInternalProcessors() map[string]core.ProcessHandler {
 
 func AddInternalOutputs() map[string]core.OutputHandler {
 	return map[string]core.OutputHandler{
-		"stdout":       stdout.Handler(),
-		"s3":           s3.Handler(),
-		gcs.OutputName: gcs.Handler(),
+		"stdout":                 stdout.Handler(),
+		"s3":                     s3.Handler(),
+		gcs.OutputName:           gcs.Handler(),
+		log_analytics.OutputName: log_analytics.Handler(),
 	}
 }
