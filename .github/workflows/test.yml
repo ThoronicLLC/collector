@@ -1,21 +1,17 @@
-# This is a basic workflow to help you get started with Actions
-
 name: Test
 
-# Controls when the action will run.
 on:
   push:
     branches:
       - master
   pull_request:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   test:
     strategy:
       matrix:
         go-version: [1.18.x]
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/setup-go@v3
