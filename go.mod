@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	cloud.google.com/go/pubsub v1.19.0
+	cloud.google.com/go/storage v1.10.0
 	github.com/aws/aws-sdk-go v1.43.18
 	github.com/golang/protobuf v1.5.2
 	github.com/google/cel-go v0.10.1
@@ -46,6 +47,7 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20220209214540-3681064d5158 // indirect
 	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220222213610-43724f9ea8cf // indirect
 	google.golang.org/grpc v1.44.0 // indirect
