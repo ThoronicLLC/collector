@@ -14,7 +14,7 @@ type Collector struct {
 	registeredInputs     map[string]core.InputHandler
 	registeredProcessors map[string]core.ProcessHandler
 	registeredOutputs    map[string]core.OutputHandler
-	runningInstances     map[string]*manager.Manager
+	runningInstances     *instanceManagerMap
 	errorHandler         core.ErrorHandler
 	saveState            core.SaveStateFunc
 	loadState            core.LoadStateFunc
@@ -30,9 +30,10 @@ type Config struct {
 func New(config Config) (*Collector, error) {
 	// Register default
 	c := &Collector{
-		errorHandler: config.ErrorHandler,
-		saveState:    config.SaveState,
-		loadState:    config.LoadState,
+		errorHandler:     config.ErrorHandler,
+		saveState:        config.SaveState,
+		loadState:        config.LoadState,
+		runningInstances: NewInstanceManagerMap(),
 	}
 
 	// Register default inputs
@@ -59,15 +60,12 @@ func New(config Config) (*Collector, error) {
 		}
 	}
 
-	// Setup instance map
-	c.runningInstances = make(map[string]*manager.Manager, 0)
-
 	return c, nil
 }
 
 func (c *Collector) Start(id string, config core.Config) error {
 	// Check if an instance already exists
-	if _, exists := c.runningInstances[id]; exists {
+	if _, exists := c.runningInstances.Get(id); exists {
 		return errors.New("instance with same ID already exists")
 	}
 
@@ -126,7 +124,7 @@ func (c *Collector) Start(id string, config core.Config) error {
 
 		// Setup instance manager
 		instance := manager.New(managerConfig)
-		c.runningInstances[id] = instance
+		c.runningInstances.Set(id, instance)
 
 		// Run instance with an instance manager
 		instance.Run()
@@ -137,14 +135,14 @@ func (c *Collector) Start(id string, config core.Config) error {
 	wg.Wait()
 
 	// Delete instance from map
-	delete(c.runningInstances, id)
+	c.runningInstances.Delete(id)
 
 	return nil
 }
 
 func (c *Collector) Stop(id string) error {
 	// Check if an instance already exists
-	if currentInstance, exists := c.runningInstances[id]; !exists {
+	if currentInstance, exists := c.runningInstances.Get(id); !exists {
 		return fmt.Errorf("an instance with that ID does not exist")
 	} else {
 		currentInstance.Stop()
@@ -155,7 +153,7 @@ func (c *Collector) Stop(id string) error {
 
 func (c *Collector) Status(id string) (*manager.Status, error) {
 	// Check if an instance exists
-	if currentInstance, exists := c.runningInstances[id]; !exists {
+	if currentInstance, exists := c.runningInstances.Get(id); !exists {
 		return nil, fmt.Errorf("an instance with that ID does not exist")
 	} else {
 		return currentInstance.Status(), nil
@@ -164,22 +162,22 @@ func (c *Collector) Status(id string) (*manager.Status, error) {
 
 func (c *Collector) List() []string {
 	instanceList := make([]string, 0)
-	for k := range c.runningInstances {
-		instanceList = append(instanceList, k)
+	for _, v := range c.runningInstances.ListKeys() {
+		instanceList = append(instanceList, v)
 	}
 	return instanceList
 }
 
 func (c *Collector) ListStatus() []*manager.Status {
 	instanceStatusList := make([]*manager.Status, 0)
-	for _, v := range c.runningInstances {
+	for _, v := range c.runningInstances.List() {
 		instanceStatusList = append(instanceStatusList, v.Status())
 	}
 	return instanceStatusList
 }
 
 func (c *Collector) StopAll() {
-	for _, v := range c.runningInstances {
+	for _, v := range c.runningInstances.List() {
 		v.Stop()
 	}
 }
