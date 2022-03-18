@@ -86,7 +86,11 @@ func (c *Collector) Start(id string, config core.Config) error {
 			c.errorHandler(true, fmt.Errorf("invalid input type: %s", config.Input.Name))
 			return
 		}
-		input := inputHandler(config.Input.Settings)
+		input, err := inputHandler(config.Input.Settings)
+		if err != nil {
+			c.errorHandler(true, fmt.Errorf("invalid input config: %s", err))
+			return
+		}
 
 		// Setup processors
 		processors := make([]core.Processor, 0)
@@ -95,7 +99,11 @@ func (c *Collector) Start(id string, config core.Config) error {
 				c.errorHandler(true, fmt.Errorf("invalid processor type: %s", v.Name))
 				return
 			} else {
-				configuredProcessor := processHandler(v.Settings)
+				configuredProcessor, err := processHandler(v.Settings)
+				if err != nil {
+					c.errorHandler(true, fmt.Errorf("invalid processor config: %s", err))
+					return
+				}
 				processors = append(processors, configuredProcessor)
 			}
 		}
@@ -107,7 +115,11 @@ func (c *Collector) Start(id string, config core.Config) error {
 				c.errorHandler(true, fmt.Errorf("invalid output type: %s", v.Name))
 				return
 			} else {
-				configuredOutput := outputHandler(v.Settings)
+				configuredOutput, err := outputHandler(v.Settings)
+				if err != nil {
+					c.errorHandler(true, fmt.Errorf("invalid output config: %s", err))
+					return
+				}
 				outputs = append(outputs, configuredOutput)
 			}
 		}

@@ -11,47 +11,59 @@ import (
 	"time"
 )
 
+var InputName = "pubsub"
+
 type Config struct {
-	ProjectID       string          `json:"project_id"`
-	SubscriptionID  string          `json:"subscription_id"`
+	ProjectID       string          `json:"project_id" validate:"required"`
+	SubscriptionID  string          `json:"subscription_id" validate:"required"`
 	Credentials     json.RawMessage `json:"credentials,omitempty"`
 	CredentialsPath string          `json:"credentials_path"`
-	FlushFrequency  int             `json:"flush_frequency"`
+	FlushFrequency  int             `json:"flush_frequency" validate:"required|min:0"`
 }
 
 type pubSubInput struct {
-	Config     []byte
+	config     Config
 	ctx        context.Context
 	cancelFunc context.CancelFunc
 }
 
 func Handler() core.InputHandler {
-	return func(config []byte) core.Input {
+	return func(config []byte) (core.Input, error) {
+		// Set config defaults
+		conf := Config{
+			FlushFrequency: 300,
+		}
+
+		// Unmarshal config
+		err := json.Unmarshal(config, &conf)
+		if err != nil {
+			return nil, fmt.Errorf("issue unmarshalling file config: %s", err)
+		}
+
+		// Validate config
+		err = core.ValidateStruct(&conf)
+		if err != nil {
+			return nil, err
+		}
+
+		// Validate credentials
+		err = validateCredentialsOrPath(conf.Credentials, conf.CredentialsPath)
+		if err != nil {
+			return nil, err
+		}
+
 		// Setup context
 		ctx, cancelFn := context.WithCancel(context.Background())
 
 		return &pubSubInput{
-			Config:     config,
+			config:     conf,
 			ctx:        ctx,
 			cancelFunc: cancelFn,
-		}
+		}, nil
 	}
 }
 
 func (p *pubSubInput) Run(errorHandler core.ErrorHandler, state core.State, processPipe chan<- core.PipelineResults) {
-	// Serialize config
-	var conf Config
-	err := json.Unmarshal(p.Config, &conf)
-	if err != nil {
-		errorHandler(true, fmt.Errorf("issue unmarshalling config: %s", err))
-		return
-	}
-
-	// If flush frequency is not set, set to default of 300 seconds (5 minutes)
-	if conf.FlushFrequency == 0 {
-		conf.FlushFrequency = 300
-	}
-
 	// Setup local variables
 	tmpWriter, err := core.NewTmpWriter()
 	if err != nil {
@@ -61,20 +73,20 @@ func (p *pubSubInput) Run(errorHandler core.ErrorHandler, state core.State, proc
 
 	// Setup new client
 	opts := make([]option.ClientOption, 0)
-	if conf.Credentials != nil && len(conf.Credentials) > 0 && string(conf.Credentials) != "null" {
-		opts = append(opts, option.WithCredentialsJSON(conf.Credentials))
-	} else if conf.CredentialsPath != "" {
-		opts = append(opts, option.WithCredentialsFile(conf.CredentialsPath))
+	if p.config.Credentials != nil && len(p.config.Credentials) > 0 && string(p.config.Credentials) != "null" {
+		opts = append(opts, option.WithCredentialsJSON(p.config.Credentials))
+	} else if p.config.CredentialsPath != "" {
+		opts = append(opts, option.WithCredentialsFile(p.config.CredentialsPath))
 	}
 
-	client, err := pubsub.NewClient(p.ctx, conf.ProjectID, opts...)
+	client, err := pubsub.NewClient(p.ctx, p.config.ProjectID, opts...)
 	if err != nil {
 		errorHandler(true, fmt.Errorf("issue setting up pub sub client: %s", err))
 		return
 	}
 
 	// Setup subscription
-	subscription := client.Subscription(conf.SubscriptionID)
+	subscription := client.Subscription(p.config.SubscriptionID)
 
 	// Setup wait group
 	var wg sync.WaitGroup
@@ -87,7 +99,7 @@ func (p *pubSubInput) Run(errorHandler core.ErrorHandler, state core.State, proc
 			select {
 			case <-p.ctx.Done():
 				return
-			case <-time.After(time.Duration(conf.FlushFrequency) * time.Second):
+			case <-time.After(time.Duration(p.config.FlushFrequency) * time.Second):
 				// Rotate the temp writer
 				count, fileName, rErr := tmpWriter.Rotate()
 				if rErr != nil {
@@ -134,4 +146,14 @@ func (p *pubSubInput) Run(errorHandler core.ErrorHandler, state core.State, proc
 
 func (p *pubSubInput) Stop() {
 	p.cancelFunc()
+}
+
+func validateCredentialsOrPath(credentials json.RawMessage, path string) error {
+	if credentials != nil && len(credentials) > 0 && string(credentials) != "null" {
+		return nil
+	} else if path != "" {
+		return nil
+	}
+
+	return fmt.Errorf("missing credentials")
 }

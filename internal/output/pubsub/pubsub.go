@@ -16,44 +16,58 @@ import (
 var OutputName = "pubsub"
 
 type Config struct {
-	ProjectID       string          `json:"project_id"`
-	TopicID         string          `json:"topic_id"`
+	ProjectID       string          `json:"project_id" validate:"required"`
+	TopicID         string          `json:"topic_id" validate:"required"`
 	Credentials     json.RawMessage `json:"credentials,omitempty"`
 	CredentialsPath string          `json:"credentials_path"`
 }
 
 type pubSubOutput struct {
-	Config []byte
+	config Config
 	ctx    context.Context
 }
 
 func Handler() core.OutputHandler {
-	return func(config []byte) core.Output {
-		return &pubSubOutput{
-			Config: config,
-			ctx:    context.Background(),
+	return func(config []byte) (core.Output, error) {
+		// Set config defaults
+		var conf Config
+
+		// Unmarshal config
+		err := json.Unmarshal(config, &conf)
+		if err != nil {
+			return nil, fmt.Errorf("issue unmarshalling file config: %s", err)
 		}
+
+		// Validate config
+		err = core.ValidateStruct(&conf)
+		if err != nil {
+			return nil, err
+		}
+
+		// Validate credentials
+		err = validateCredentialsOrPath(conf.Credentials, conf.CredentialsPath)
+		if err != nil {
+			return nil, err
+		}
+
+		return &pubSubOutput{
+			config: conf,
+			ctx:    context.Background(),
+		}, nil
 	}
 }
 
 func (p *pubSubOutput) Write(inputFile string) (int, error) {
-	// Serialize config
-	var conf Config
-	err := json.Unmarshal(p.Config, &conf)
-	if err != nil {
-		return 0, fmt.Errorf("issue unmarshalling config: %s", err)
-	}
-
 	// Setup new client
 	opts := make([]option.ClientOption, 0)
-	if conf.Credentials != nil && len(conf.Credentials) > 0 && string(conf.Credentials) != "null" {
-		opts = append(opts, option.WithCredentialsJSON(conf.Credentials))
-	} else if conf.CredentialsPath != "" {
-		opts = append(opts, option.WithCredentialsFile(conf.CredentialsPath))
+	if p.config.Credentials != nil && len(p.config.Credentials) > 0 && string(p.config.Credentials) != "null" {
+		opts = append(opts, option.WithCredentialsJSON(p.config.Credentials))
+	} else if p.config.CredentialsPath != "" {
+		opts = append(opts, option.WithCredentialsFile(p.config.CredentialsPath))
 	}
 
 	// Setup PubSub client
-	client, err := pubsub.NewClient(p.ctx, conf.ProjectID, opts...)
+	client, err := pubsub.NewClient(p.ctx, p.config.ProjectID, opts...)
 	if err != nil {
 		return 0, fmt.Errorf("issue setting up pub sub client: %s", err)
 	}
@@ -61,7 +75,7 @@ func (p *pubSubOutput) Write(inputFile string) (int, error) {
 	// Setup line variables
 	lineCount := 0
 	emptyLines := 0
-	topicClient := client.Topic(conf.TopicID)
+	topicClient := client.Topic(p.config.TopicID)
 
 	// Open file
 	file, err := os.Open(inputFile)
@@ -105,4 +119,14 @@ func (p *pubSubOutput) Write(inputFile string) (int, error) {
 	}
 
 	return lineCount, nil
+}
+
+func validateCredentialsOrPath(credentials json.RawMessage, path string) error {
+	if credentials != nil && len(credentials) > 0 && string(credentials) != "null" {
+		return nil
+	} else if path != "" {
+		return nil
+	}
+
+	return fmt.Errorf("missing credentials")
 }

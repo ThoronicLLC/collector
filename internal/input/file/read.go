@@ -30,7 +30,9 @@ func copyFromFilePosition(path string, position int64, writer io.Writer) (int64,
 	}
 
 	// If the file size is smaller than the current position, assume it has changed
-	if fileStats.Size() < position {
+	if fileStats.Size() == 0 {
+		return 0, nil
+	} else if fileStats.Size() < position {
 		position = 0
 	}
 

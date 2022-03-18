@@ -20,14 +20,14 @@ import (
 var OutputName = "log_analytics"
 
 type Config struct {
-	LogType     string `json:"log_type"`
-	WorkspaceID string `json:"workspace_id"`
-	PrimaryKey  string `json:"primary_key"`
+	LogType     string `json:"log_type" validate:"required"`
+	WorkspaceID string `json:"workspace_id" validate:"required"`
+	PrimaryKey  string `json:"primary_key" validate:"required"`
 	DateField   string `json:"date_field,omitempty"`
 }
 
 type logAnalyticsOutput struct {
-	config     []byte
+	config     Config
 	ctx        context.Context
 	cancelFunc context.CancelFunc
 }
@@ -37,31 +37,36 @@ type logAnalyticsDefaultLog struct {
 }
 
 func Handler() core.OutputHandler {
-	return func(config []byte) core.Output {
+	return func(config []byte) (core.Output, error) {
+		// Set config defaults
+		conf := Config{
+			DateField: "Timestamp",
+		}
+
+		// Unmarshal config
+		err := json.Unmarshal(config, &conf)
+		if err != nil {
+			return nil, fmt.Errorf("issue unmarshalling file config: %s", err)
+		}
+
+		// Validate config
+		err = core.ValidateStruct(&conf)
+		if err != nil {
+			return nil, err
+		}
+
 		// Setup context
 		ctx, cancelFn := context.WithCancel(context.Background())
 
 		return &logAnalyticsOutput{
-			config:     config,
+			config:     conf,
 			ctx:        ctx,
 			cancelFunc: cancelFn,
-		}
+		}, nil
 	}
 }
 
 func (l *logAnalyticsOutput) Write(inputFile string) (int, error) {
-	// Unmarshal config
-	conf := Config{
-		LogType:     "",
-		WorkspaceID: "",
-		PrimaryKey:  "",
-		DateField:   "Timestamp",
-	}
-	err := json.Unmarshal(l.config, &conf)
-	if err != nil {
-		return 0, fmt.Errorf("issue unmarshalling config: %s", err)
-	}
-
 	// Make upload buffer and line count
 	uploadBuffer := make([]interface{}, 0)
 	uploadBufferByteSize := 0
@@ -109,7 +114,7 @@ func (l *logAnalyticsOutput) Write(inputFile string) (int, error) {
 				lineCount = 1
 
 				// Do upload
-				err = logAnalyticsUpload(uploadBuffer, conf.LogType, conf.WorkspaceID, conf.PrimaryKey, conf.DateField)
+				err = logAnalyticsUpload(uploadBuffer, l.config.LogType, l.config.WorkspaceID, l.config.PrimaryKey, l.config.DateField)
 				if err != nil {
 					return 0, fmt.Errorf("issue uploading log: %s", err)
 				}
@@ -133,7 +138,7 @@ func (l *logAnalyticsOutput) Write(inputFile string) (int, error) {
 	// Upload any remaining data
 	if len(uploadBuffer) > 0 {
 		log.Debugf("uploading remaining buffer data (%d log entries)", lineCount)
-		err = logAnalyticsUpload(uploadBuffer, conf.LogType, conf.WorkspaceID, conf.PrimaryKey, conf.DateField)
+		err = logAnalyticsUpload(uploadBuffer, l.config.LogType, l.config.WorkspaceID, l.config.PrimaryKey, l.config.DateField)
 		if err != nil {
 			return 0, fmt.Errorf("issue uploading logs to log analytics: %s", err)
 		}

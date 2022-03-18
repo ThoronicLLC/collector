@@ -7,13 +7,16 @@ import (
 	"os"
 )
 
-type Output struct{}
+var OutputName = "stdout"
+
+type Config struct {
+}
 
 type stdoutOutput struct{}
 
 func Handler() core.OutputHandler {
-	return func(config []byte) core.Output {
-		return &stdoutOutput{}
+	return func(config []byte) (core.Output, error) {
+		return &stdoutOutput{}, nil
 	}
 }
 
