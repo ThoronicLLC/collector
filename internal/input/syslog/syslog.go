@@ -14,15 +14,15 @@ import (
 var InputName = "syslog"
 
 type Config struct {
-	Address        string `json:"address"`
-	Port           int    `json:"port"`
-	Protocol       string `json:"protocol"`
-	Format         string `json:"format"`
-	FlushFrequency int    `json:"flush_frequency"`
+	Address        string `json:"address" validate:"required|ip"`
+	Port           int    `json:"port" validate:"required|int|min:0|max:65535"`
+	Protocol       string `json:"protocol" validate:"required|in:tcp,udp,both"`
+	Format         string `json:"format" validate:"required|in:automatic,RFC3164,RFC5424,RFC6587,raw"`
+	FlushFrequency int    `json:"flush_frequency" validate:"required|min:0"`
 }
 
 type syslogInput struct {
-	Config     []byte
+	config     Config
 	ctx        context.Context
 	cancelFunc context.CancelFunc
 	server     *syslog.Server
@@ -30,37 +30,42 @@ type syslogInput struct {
 }
 
 func Handler() core.InputHandler {
-	return func(config []byte) core.Input {
+	return func(config []byte) (core.Input, error) {
+		// Set config defaults
+		conf := Config{
+			Address:        "0.0.0.0",
+			Port:           1514,
+			Protocol:       "udp",
+			Format:         "raw",
+			FlushFrequency: 300,
+		}
+
+		// Unmarshal config
+		err := json.Unmarshal(config, &conf)
+		if err != nil {
+			return nil, fmt.Errorf("issue unmarshalling file config: %s", err)
+		}
+
+		// Validate config
+		err = core.ValidateStruct(&conf)
+		if err != nil {
+			return nil, err
+		}
+
 		// Setup context
 		ctx, cancelFn := context.WithCancel(context.Background())
 
 		return &syslogInput{
-			Config:     config,
+			config:     conf,
 			ctx:        ctx,
 			cancelFunc: cancelFn,
 			server:     syslog.NewServer(),
 			logChannel: make(syslog.LogPartsChannel),
-		}
+		}, nil
 	}
 }
 
 func (s *syslogInput) Run(errorHandler core.ErrorHandler, state core.State, processPipe chan<- core.PipelineResults) {
-	// Setup default config
-	conf := Config{
-		Address:        "0.0.0.0",
-		Port:           1514,
-		Protocol:       "udp",
-		Format:         "raw",
-		FlushFrequency: 500,
-	}
-
-	// Marshal settings into config
-	err := json.Unmarshal(s.Config, &conf)
-	if err != nil {
-		errorHandler(true, fmt.Errorf("issue unmarshalling config: %s", err))
-		return
-	}
-
 	// Setup local variables
 	tmpWriter, err := core.NewTmpWriter()
 	if err != nil {
@@ -72,7 +77,7 @@ func (s *syslogInput) Run(errorHandler core.ErrorHandler, state core.State, proc
 	handler := syslog.NewChannelHandler(s.logChannel)
 
 	// Set syslog format and handler
-	switch conf.Format {
+	switch s.config.Format {
 	case "automatic":
 		s.server.SetFormat(syslog.Automatic)
 	case "RFC3164":
@@ -88,10 +93,10 @@ func (s *syslogInput) Run(errorHandler core.ErrorHandler, state core.State, proc
 	}
 	s.server.SetHandler(handler)
 
-	addressAndPort := fmt.Sprintf("%s:%d", conf.Address, conf.Port)
+	addressAndPort := fmt.Sprintf("%s:%d", s.config.Address, s.config.Port)
 
 	// Setup TCP listener
-	if conf.Protocol == "tcp" || conf.Protocol == "both" {
+	if s.config.Protocol == "tcp" || s.config.Protocol == "both" {
 		log.Debugf("syslog server listening on %s/%s", addressAndPort, "TCP")
 		if err := s.server.ListenTCP(addressAndPort); err != nil {
 			errorHandler(true, fmt.Errorf("unable to start TCP listener on %s", addressAndPort))
@@ -100,7 +105,7 @@ func (s *syslogInput) Run(errorHandler core.ErrorHandler, state core.State, proc
 	}
 
 	// Setup UDP listener
-	if conf.Protocol == "udp" || conf.Protocol == "both" {
+	if s.config.Protocol == "udp" || s.config.Protocol == "both" {
 		log.Debugf("syslog server listening on %s/%s", addressAndPort, "UDP")
 		if err := s.server.ListenUDP(addressAndPort); err != nil {
 			errorHandler(true, fmt.Errorf("unable to start UDP listener on %s", addressAndPort))
@@ -129,7 +134,7 @@ func (s *syslogInput) Run(errorHandler core.ErrorHandler, state core.State, proc
 					errorHandler(false, err)
 				}
 				return
-			case <-time.After(time.Duration(conf.FlushFrequency) * time.Second):
+			case <-time.After(time.Duration(s.config.FlushFrequency) * time.Second):
 				err := s.flush(tmpWriter, processPipe)
 				if err != nil {
 					errorHandler(true, err)

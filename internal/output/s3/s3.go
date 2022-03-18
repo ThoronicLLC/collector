@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ThoronicLLC/collector/pkg/core"
+	"github.com/ThoronicLLC/collector/pkg/core/variable_replacer"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -12,36 +13,47 @@ import (
 	"time"
 )
 
-type s3Output struct {
-	config []byte
+var OutputName = "s3"
+
+type Config struct {
+	Bucket          string `json:"bucket" validate:"required"`
+	Region          string `json:"region" validate:"required"`
+	AccessKeyID     string `json:"access_key_id" validate:"required"`
+	SecretAccessKey string `json:"secret_access_key" validate:"required"`
+	Path            string `json:"path" validate:"required"`
+	MaxRetries      int    `json:"max_retries" validate:"int|min:0"`
 }
 
-type s3Config struct {
-	Bucket          string `json:"bucket"`
-	Region          string `json:"region"`
-	AccessKeyID     string `json:"access_key_id"`
-	SecretAccessKey string `json:"secret_access_key"`
-	FilePrefix      string `json:"file_prefix"`
-	FileExtension   string `json:"file_extension"`
-	FileTimestamp   bool   `json:"file_timestamp"`
-	MaxRetries      int    `json:"max_retries"`
+type s3Output struct {
+	config Config
 }
 
 func Handler() core.OutputHandler {
-	return func(config []byte) core.Output {
-		return &s3Output{
-			config: config,
+	return func(config []byte) (core.Output, error) {
+		// Set config defaults
+		conf := Config{
+			MaxRetries: 3,
 		}
+
+		// Unmarshal config
+		err := json.Unmarshal(config, &conf)
+		if err != nil {
+			return nil, fmt.Errorf("issue unmarshalling file config: %s", err)
+		}
+
+		// Validate config
+		err = core.ValidateStruct(&conf)
+		if err != nil {
+			return nil, err
+		}
+
+		return &s3Output{
+			config: conf,
+		}, nil
 	}
 }
 
 func (s *s3Output) Write(inputFile string) (int, error) {
-	var conf s3Config
-	err := json.Unmarshal(s.config, &conf)
-	if err != nil {
-		return 0, fmt.Errorf("issue unmarshalling config: %s", err)
-	}
-
 	// Open file
 	fs, err := os.Open(inputFile)
 	if err != nil {
@@ -56,16 +68,16 @@ func (s *s3Output) Write(inputFile string) (int, error) {
 	}
 
 	// Initialize AWS creds
-	creds := credentials.NewStaticCredentials(conf.AccessKeyID, conf.SecretAccessKey, "")
+	creds := credentials.NewStaticCredentials(s.config.AccessKeyID, s.config.SecretAccessKey, "")
 	_, err = creds.Get()
 	if err != nil {
 		return 0, fmt.Errorf("invalid credentials: %s", err)
 	}
 
 	// Initialize AWS config
-	awsConf := aws.NewConfig().WithRegion(conf.Region).WithCredentials(creds)
-	if conf.MaxRetries > 0 {
-		awsConf = awsConf.WithMaxRetries(conf.MaxRetries)
+	awsConf := aws.NewConfig().WithRegion(s.config.Region).WithCredentials(creds)
+	if s.config.MaxRetries > 0 {
+		awsConf = awsConf.WithMaxRetries(s.config.MaxRetries)
 	}
 
 	// Initialize AWS session
@@ -84,16 +96,14 @@ func (s *s3Output) Write(inputFile string) (int, error) {
 		u.PartSize = partSize // We calculate part size based on file size
 	})
 
+	currentTime := time.Now()
+
 	// Build file name
-	fileName := fmt.Sprintf("%s", conf.FilePrefix)
-	if conf.FileTimestamp {
-		fileName = fmt.Sprintf("%s.%d", fileName, time.Now().Unix())
-	}
-	fileName = fmt.Sprintf("%s.%s", fileName, conf.FileExtension)
+	fileName := variable_replacer.VariableReplacer(currentTime, s.config.Path)
 
 	// Create upload input
 	uploadInput := &s3manager.UploadInput{
-		Bucket: aws.String(conf.Bucket),
+		Bucket: aws.String(s.config.Bucket),
 		Key:    aws.String(fileName),
 		Body:   fs,
 	}

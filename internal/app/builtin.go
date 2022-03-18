@@ -15,22 +15,22 @@ import (
 
 func AddInternalInputs() map[string]core.InputHandler {
 	return map[string]core.InputHandler{
-		"file":           file.Handler(),
-		"pubsub":         pubsubin.Handler(),
-		syslog.InputName: syslog.Handler(),
+		file.InputName:     file.Handler(),
+		pubsubin.InputName: pubsubin.Handler(),
+		syslog.InputName:   syslog.Handler(),
 	}
 }
 
 func AddInternalProcessors() map[string]core.ProcessHandler {
 	return map[string]core.ProcessHandler{
-		"cel": cel.Handler(),
+		cel.ProcessorName: cel.Handler(),
 	}
 }
 
 func AddInternalOutputs() map[string]core.OutputHandler {
 	return map[string]core.OutputHandler{
-		"stdout":                 stdout.Handler(),
-		"s3":                     s3.Handler(),
+		stdout.OutputName:        stdout.Handler(),
+		s3.OutputName:            s3.Handler(),
 		gcs.OutputName:           gcs.Handler(),
 		log_analytics.OutputName: log_analytics.Handler(),
 		pubsubout.OutputName:     pubsubout.Handler(),

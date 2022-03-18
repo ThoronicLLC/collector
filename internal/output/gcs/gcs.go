@@ -17,40 +17,54 @@ import (
 var OutputName = "gcs"
 
 type Config struct {
-	Bucket          string          `json:"bucket"`
-	Path            string          `json:"path"`
+	Bucket          string          `json:"bucket" validate:"required"`
+	Path            string          `json:"path" validate:"required"`
 	Credentials     json.RawMessage `json:"credentials,omitempty"`
 	CredentialsPath string          `json:"credentials_path"`
 	Composite       bool            `json:"composite"`
 }
 
 type gcsOutput struct {
-	config     []byte
+	config     Config
 	ctx        context.Context
 	cancelFunc context.CancelFunc
 }
 
 func Handler() core.OutputHandler {
-	return func(config []byte) core.Output {
+	return func(config []byte) (core.Output, error) {
+		// Set config defaults
+		var conf Config
+
+		// Unmarshal config
+		err := json.Unmarshal(config, &conf)
+		if err != nil {
+			return nil, fmt.Errorf("issue unmarshalling file config: %s", err)
+		}
+
+		// Validate config
+		err = core.ValidateStruct(&conf)
+		if err != nil {
+			return nil, err
+		}
+
+		// Validate credentials
+		err = validateCredentialsOrPath(conf.Credentials, conf.CredentialsPath)
+		if err != nil {
+			return nil, err
+		}
+
 		// Setup context
 		ctx, cancelFn := context.WithCancel(context.Background())
 
 		return &gcsOutput{
-			config:     config,
+			config:     conf,
 			ctx:        ctx,
 			cancelFunc: cancelFn,
-		}
+		}, nil
 	}
 }
 
 func (g *gcsOutput) Write(inputFile string) (int, error) {
-	// Unmarshal config
-	var conf Config
-	err := json.Unmarshal(g.config, &conf)
-	if err != nil {
-		return 0, fmt.Errorf("issue unmarshalling config: %s", err)
-	}
-
 	// Get current time
 	currentTime := time.Now()
 
@@ -63,10 +77,10 @@ func (g *gcsOutput) Write(inputFile string) (int, error) {
 
 	// Setup new client
 	opts := make([]option.ClientOption, 0)
-	if conf.Credentials != nil && len(conf.Credentials) > 0 && string(conf.Credentials) != "null" {
-		opts = append(opts, option.WithCredentialsJSON(conf.Credentials))
-	} else if conf.CredentialsPath != "" {
-		opts = append(opts, option.WithCredentialsFile(conf.CredentialsPath))
+	if g.config.Credentials != nil && len(g.config.Credentials) > 0 && string(g.config.Credentials) != "null" {
+		opts = append(opts, option.WithCredentialsJSON(g.config.Credentials))
+	} else if g.config.CredentialsPath != "" {
+		opts = append(opts, option.WithCredentialsFile(g.config.CredentialsPath))
 	}
 
 	// Setup storage client
@@ -76,16 +90,16 @@ func (g *gcsOutput) Write(inputFile string) (int, error) {
 	}
 
 	// Build file name
-	fileName := variable_replacer.VariableReplacer(currentTime, conf.Path)
+	fileName := variable_replacer.VariableReplacer(currentTime, g.config.Path)
 	firstFileName := fileName
 
 	// Generate temporary file name if composition is enabled
-	if conf.Composite {
+	if g.config.Composite {
 		firstFileName = fmt.Sprintf("%s.%s.tmp", fileName, uuid.New().String())
 	}
 
 	// Initialize the cloud file and writer
-	googleCloudStorageFile := client.Bucket(conf.Bucket).Object(firstFileName)
+	googleCloudStorageFile := client.Bucket(g.config.Bucket).Object(firstFileName)
 	gcsFileWriter := googleCloudStorageFile.NewWriter(g.ctx)
 
 	// Upload the file
@@ -104,8 +118,8 @@ func (g *gcsOutput) Write(inputFile string) (int, error) {
 	}
 
 	// If file composition is enabled, do it
-	if conf.Composite {
-		compositeFile := client.Bucket(conf.Bucket).Object(fileName)
+	if g.config.Composite {
+		compositeFile := client.Bucket(g.config.Bucket).Object(fileName)
 
 		// Check if composite file already exists
 		_, err = compositeFile.Attrs(g.ctx)
@@ -136,4 +150,14 @@ func (g *gcsOutput) Write(inputFile string) (int, error) {
 	}
 
 	return 0, nil
+}
+
+func validateCredentialsOrPath(credentials json.RawMessage, path string) error {
+	if credentials != nil && len(credentials) > 0 && string(credentials) != "null" {
+		return nil
+	} else if path != "" {
+		return nil
+	}
+
+	return fmt.Errorf("missing credentials")
 }
