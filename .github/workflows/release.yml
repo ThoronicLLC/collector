@@ -83,6 +83,7 @@ jobs:
         if: ${{ steps.changelog.outputs.skipped == 'false' }}
         env:
           DOCKER_REPO: ${{ secrets.DOCKER_REPO }}
+          DOCKER_BUILDKIT: 1
         run: make docker
       - name: Upload Archives to Release
         if: ${{ steps.changelog.outputs.skipped == 'false' }}
