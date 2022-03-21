@@ -52,9 +52,9 @@ if [ -n "$CLEAN" ]; then
   rm -r "$project_path/bin/windows" &>/dev/null
   rm "$project_path/bin/linux/collector" &>/dev/null
   rm -r "$project_path/bin/linux" &>/dev/null
-  rm "$project_path/bin/collector_$VERSION-osx-64bit.zip" &>/dev/null
-  rm "$project_path/bin/collector_$VERSION-windows-64bit.zip" &>/dev/null
-  rm "$project_path/bin/collector_$VERSION-linux-64bit.zip" &>/dev/null
+  rm "$project_path/bin/collector-osx-64bit.zip" &>/dev/null
+  rm "$project_path/bin/collector-windows-64bit.zip" &>/dev/null
+  rm "$project_path/bin/collector-linux-64bit.zip" &>/dev/null
 fi
 
 # Create new clean directories
@@ -86,6 +86,8 @@ if [ -n "$OSX" ]; then
    echo "failed to build osx binary!" 1>&2;
    exit 1;
   }
+
+  chmod +x "$project_path/bin/osx/collector"
 fi
 
 # Compile for Windows
@@ -115,7 +117,7 @@ if [ -n "$LINUX" ]; then
    exit 1;
   }
 
-  chmod +x "$project_path/bin/windows/collector.exe"
+  chmod +x "$project_path/bin/linux/collector"
 fi
 
 # Package binaries into ZIP files
@@ -124,21 +126,33 @@ if [ -n "$ZIP" ]; then
     if [ -n "$VERBOSE" ]; then
       echo "Packaging OSX binary..."
     fi
-    zip "$project_path/bin/collector-osx-64bit.zip" "$project_path/bin/osx/collector" "$project_path/LICENSE" "$project_path/README.md"
+    zip "$project_path/bin/collector-osx-64bit.zip" \
+      "$project_path/bin/osx/collector" \
+      "$project_path/LICENSE" \
+      "$project_path/README.md" \
+      "$project_path/CHANGELOG.md"
   fi
 
   if [ -n "$WINDOWS" ]; then
     if [ -n "$VERBOSE" ]; then
       echo "Packaging Windows binary..."
     fi
-    zip "$project_path/bin/collector-windows-64bit.zip" "$project_path/bin/windows/collector.exe" "$project_path/LICENSE" "$project_path/README.md"
+    zip "$project_path/bin/collector-windows-64bit.zip" \
+      "$project_path/bin/windows/collector.exe" \
+      "$project_path/LICENSE" \
+      "$project_path/README.md" \
+      "$project_path/CHANGELOG.md"
   fi
 
   if [ -n "$LINUX" ]; then
     if [ -n "$VERBOSE" ]; then
       echo "Packaging Linux binary..."
     fi
-    zip "$project_path/bin/collector-linux-64bit.zip" "$project_path/bin/linux/collector" "$project_path/LICENSE" "$project_path/README.md"
+    zip "$project_path/bin/collector-linux-64bit.zip" \
+      "$project_path/bin/linux/collector" \
+      "$project_path/LICENSE" \
+      "$project_path/README.md" \
+      "$project_path/CHANGELOG.md"
   fi
 fi
 
