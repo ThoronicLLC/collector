@@ -8,14 +8,35 @@ GOTESTRACE=$(GOTEST) -race
 GOGET=$(GOCMD) get
 GOFMT=$(GOCMD)fmt
 
-dev: ## Build development binaries
-	$(CURDIR)/build/package/dev.bash
+all: ## Build package in all supported formats
+	$(CURDIR)/build/package/build.bash --osx --linux --windows --clean --verbose
 
-prod: ## Build production binaries
-	$(CURDIR)/build/package/prod.bash
+all_zip: ## Build package in all supported formats and compress
+	$(CURDIR)/build/package/build.bash --osx --linux --windows --clean --verbose --zip
+
+linux: ## Build for linux
+	$(CURDIR)/build/package/build.bash --linux --clean --verbose
+
+linux_zip: ## Build for linux and compress it in a zip file
+	$(CURDIR)/build/package/build.bash --linux --clean --verbose --zip
+
+osx: ## Build for osx
+	$(CURDIR)/build/package/build.bash --osx --clean --verbose
+
+osx_zip: ## Build for osx and compress it in a zip file
+	$(CURDIR)/build/package/build.bash --osx --clean --verbose --zip
+
+windows: ## Build for windows
+	$(CURDIR)/build/package/build.bash --windows --clean --verbose
+
+windows_zip: ## Build for windows and compress it in a zip file
+	$(CURDIR)/build/package/build.bash --windows --clean --verbose --zip
+
+docker: ## Build docker container
+	$(CURDIR)/build/docker/build.bash
 
 test: ## Run tests for the project
-	$(GOTEST) -count=1 -coverprofile=$(CURDIR)/bin/cover.out -short -cover -failfast ./... -v
+	$(GOTEST) -count=1 -coverprofile=$(CURDIR)/bin/cover.out -short -cover -failfast ./...
 
 race: ## Run tests for the project (while detecting race conditions)
 	$(GOTESTRACE) -coverprofile=$(CURDIR)/bin/cover.out -short -cover -failfast ./...
