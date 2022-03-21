@@ -109,8 +109,8 @@ jobs:
         env:
           DOCKER_REPO: ${{ secrets.DOCKER_REPO }}
         run: docker push $DOCKER_REPO --all-tags
-#      - name: Push to master
-#        uses: ad-m/github-push-action@master
-#        if: ${{ steps.changelog.outputs.skipped == 'false' }}
-#        with:
-#          github_token: ${{ secrets.ADMIN_TOKEN }}
+      - name: Push to master
+        uses: ad-m/github-push-action@master
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        with:
+          github_token: ${{ secrets.ADMIN_TOKEN }}
