@@ -213,7 +213,7 @@ func (manager *Manager) outputHandler() {
 		} else if outputError {
 			log.Debugf("output failed to process %d results for: %s", res.ResultCount, manager.id)
 			manager.failureStatus(err)
-			break
+			continue
 		}
 
 		// Delete old results
