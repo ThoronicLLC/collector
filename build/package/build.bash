@@ -126,7 +126,7 @@ if [ -n "$ZIP" ]; then
     if [ -n "$VERBOSE" ]; then
       echo "Packaging OSX binary..."
     fi
-    zip "$project_path/bin/collector-osx-64bit.zip" \
+    zip -j "$project_path/bin/collector-osx-64bit.zip" \
       "$project_path/bin/osx/collector" \
       "$project_path/LICENSE" \
       "$project_path/README.md" \
@@ -137,7 +137,7 @@ if [ -n "$ZIP" ]; then
     if [ -n "$VERBOSE" ]; then
       echo "Packaging Windows binary..."
     fi
-    zip "$project_path/bin/collector-windows-64bit.zip" \
+    zip -j "$project_path/bin/collector-windows-64bit.zip" \
       "$project_path/bin/windows/collector.exe" \
       "$project_path/LICENSE" \
       "$project_path/README.md" \
@@ -148,7 +148,7 @@ if [ -n "$ZIP" ]; then
     if [ -n "$VERBOSE" ]; then
       echo "Packaging Linux binary..."
     fi
-    zip "$project_path/bin/collector-linux-64bit.zip" \
+    zip -j "$project_path/bin/collector-linux-64bit.zip" \
       "$project_path/bin/linux/collector" \
       "$project_path/LICENSE" \
       "$project_path/README.md" \
