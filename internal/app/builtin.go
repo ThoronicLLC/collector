@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/ThoronicLLC/collector/internal/input/file"
+	"github.com/ThoronicLLC/collector/internal/input/msgraph"
 	pubsubin "github.com/ThoronicLLC/collector/internal/input/pubsub"
 	"github.com/ThoronicLLC/collector/internal/input/syslog"
 	"github.com/ThoronicLLC/collector/internal/output/gcs"
@@ -18,6 +19,7 @@ func AddInternalInputs() map[string]core.InputHandler {
 		file.InputName:     file.Handler(),
 		pubsubin.InputName: pubsubin.Handler(),
 		syslog.InputName:   syslog.Handler(),
+		msgraph.InputName:  msgraph.Handler(),
 	}
 }
 
