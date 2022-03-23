@@ -1,4 +1,18 @@
-# 0.2.0 (2022-03-23)
+# [0.3.0](https://github.com/ThoronicLLC/collector/compare/v0.2.0...v0.3.0) (2022-03-23)
+
+
+### Bug Fixes
+
+* prevent junk directories existing in release zip ([#37](https://github.com/ThoronicLLC/collector/issues/37)) ([6b0d835](https://github.com/ThoronicLLC/collector/commit/6b0d8350717ce916abcc198ee6fe8fca1d975727))
+
+
+### Features
+
+* added file output plugin ([#39](https://github.com/ThoronicLLC/collector/issues/39)) ([37c8b78](https://github.com/ThoronicLLC/collector/commit/37c8b7878d5d70dac3b2c070664954a21415d62b))
+
+
+
+# [0.2.0](https://github.com/ThoronicLLC/collector/compare/688fc2b9d86398b715ef50d49c75040e1c52da05...v0.2.0) (2022-03-23)
 
 
 ### Bug Fixes
