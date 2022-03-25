@@ -90,36 +90,7 @@ func (p *pubSubInput) Run(errorHandler core.ErrorHandler, state core.State, proc
 
 	// Setup wait group
 	var wg sync.WaitGroup
-
-	// Start timed process sync go routine
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for {
-			select {
-			case <-p.ctx.Done():
-				return
-			case <-time.After(time.Duration(p.config.FlushFrequency) * time.Second):
-				// Rotate the temp writer
-				count, fileName, rErr := tmpWriter.Rotate()
-				if rErr != nil {
-					errorHandler(true, fmt.Errorf("issue rotating temp file: %s", rErr))
-					p.cancelFunc()
-					continue
-				}
-
-				// Only send on if there are results
-				if count > 0 {
-					processPipe <- core.PipelineResults{
-						FilePath:    fileName,
-						ResultCount: count,
-						State:       nil,
-						RetryCount:  0,
-					}
-				}
-			}
-		}
-	}()
+	flushCtx, flushCancelFn := context.WithCancel(p.ctx)
 
 	// Start pub sub receiver go routine
 	wg.Add(1)
@@ -136,12 +107,39 @@ func (p *pubSubInput) Run(errorHandler core.ErrorHandler, state core.State, proc
 			}
 		})
 
+		// Handle errors
 		if rErr != nil {
 			errorHandler(false, fmt.Errorf("error receiving subscription messages: %s", rErr))
+		}
+
+		// Cancel flush context
+		flushCancelFn()
+	}()
+
+	// Start timed process sync go routine
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-flushCtx.Done():
+				return
+			case <-time.After(time.Duration(p.config.FlushFrequency) * time.Second):
+				err = flush(tmpWriter, processPipe)
+				if err != nil {
+					errorHandler(false, fmt.Errorf("issue flushing file: %s", err))
+				}
+			}
 		}
 	}()
 
 	wg.Wait()
+
+	// Flush any remaining data to pipeline before return
+	err = flush(tmpWriter, processPipe)
+	if err != nil {
+		errorHandler(false, fmt.Errorf("issue flushing file: %s", err))
+	}
 }
 
 func (p *pubSubInput) Stop() {
@@ -156,4 +154,22 @@ func validateCredentialsOrPath(credentials json.RawMessage, path string) error {
 	}
 
 	return fmt.Errorf("missing credentials")
+}
+
+func flush(tmpFile *core.TmpWriter, processPipe chan<- core.PipelineResults) error {
+	// Rotate the temp writer
+	count, fileName, err := tmpFile.Rotate()
+	if err != nil {
+		return err
+	}
+
+	// Only send on if there are results
+	processPipe <- core.PipelineResults{
+		FilePath:    fileName,
+		ResultCount: count,
+		State:       nil,
+		RetryCount:  0,
+	}
+
+	return nil
 }
