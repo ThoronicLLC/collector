@@ -1,3 +1,13 @@
+## [0.3.1](https://github.com/ThoronicLLC/collector/compare/v0.3.0...v0.3.1) (2022-03-25)
+
+
+### Bug Fixes
+
+* correctly flush sqs input results when closed ([#45](https://github.com/ThoronicLLC/collector/issues/45)) ([7184a73](https://github.com/ThoronicLLC/collector/commit/7184a739a63cae55b0a890496658e483e48d20b7))
+* **input:** correctly flush data when pubsub input is closed ([#42](https://github.com/ThoronicLLC/collector/issues/42)) ([6374665](https://github.com/ThoronicLLC/collector/commit/637466579a04876803e183dcb163ca1c57b2f1d8))
+
+
+
 # [0.3.0](https://github.com/ThoronicLLC/collector/compare/v0.2.0...v0.3.0) (2022-03-23)
 
 
