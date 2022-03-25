@@ -47,7 +47,7 @@ COPY --chown=nonroot:nonroot --from=golang /empty /secrets
 # Copy temp directory
 COPY --chown=nonroot:nonroot --from=golang /empty /tmp
 
-# Copy config directory
+# Copy etc directory
 COPY --chown=nonroot:nonroot --from=golang /empty /etc
 
 # Copy collector config directory
@@ -59,4 +59,4 @@ LABEL maintainer="Coleton Pierson <coleton.pierson@thoronic.com>"
 # Perform any further action as an unprivileged user.
 USER nonroot:nonroot
 
-CMD ["/collector", "serve", "--config", "/etc/collector"]
+CMD ["/collector", "serve"]
