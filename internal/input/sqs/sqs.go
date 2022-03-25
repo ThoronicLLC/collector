@@ -88,64 +88,40 @@ func (s *sqsInput) Run(errorHandler core.ErrorHandler, state core.State, process
 
 	// Setup wait group
 	var wg sync.WaitGroup
-
-	// Start timed process sync go routine
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for {
-			select {
-			case <-s.ctx.Done():
-				return
-			case <-time.After(time.Duration(s.config.FlushFrequency) * time.Second):
-				// Rotate the temp writer
-				count, fileName, rErr := tmpWriter.Rotate()
-				if rErr != nil {
-					errorHandler(true, fmt.Errorf("issue rotating temp file: %s", rErr))
-					s.cancelFunc()
-					continue
-				}
-
-				// Send to process pipe (if no results, process pipe will report state and status)
-				processPipe <- core.PipelineResults{
-					FilePath:    fileName,
-					ResultCount: count,
-					State:       nil,
-					RetryCount:  0,
-				}
-			}
-		}
-	}()
+	flushCtx, flushCancelFn := context.WithCancel(s.ctx)
 
 	// Start pub sub receiver go routine
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		defer flushCancelFn()
 		for {
 			select {
 			case <-s.ctx.Done():
 				return
 			default:
 				// Long poll SQS
-				output, err := sqsService.ReceiveMessage(&sqs.ReceiveMessageInput{
+				output, err := sqsService.ReceiveMessageWithContext(s.ctx, &sqs.ReceiveMessageInput{
 					QueueUrl:            aws.String(s.config.QueueUrl),
 					MaxNumberOfMessages: aws.Int64(10000),
 					WaitTimeSeconds:     aws.Int64(int64(s.config.PollFrequency)),
 				})
 				if err != nil {
-					errorHandler(false, fmt.Errorf("failed to fetch sqs messages: %s", err))
+					errorHandler(true, fmt.Errorf("failed to fetch sqs messages: %s", err))
+					return
 				}
 
 				// Loop through received messages and skip those with an empty body
-				// Loop through received messages and skip those with an empty body
-				for _, message := range output.Messages {
-					if message != nil {
-						if message.Body != nil {
-							safeBody := derefString(message.Body)
-							if safeBody != "" {
-								_, err = tmpWriter.Write([]byte(safeBody))
-								if err != nil {
-									errorHandler(false, fmt.Errorf("issue writing sqs message to tmp file: %s", err))
+				if output != nil {
+					for _, message := range output.Messages {
+						if message != nil {
+							if message.Body != nil {
+								safeBody := derefString(message.Body)
+								if safeBody != "" {
+									_, err = tmpWriter.Write([]byte(safeBody))
+									if err != nil {
+										errorHandler(false, fmt.Errorf("issue writing sqs message to tmp file: %s", err))
+									}
 								}
 							}
 						}
@@ -155,7 +131,30 @@ func (s *sqsInput) Run(errorHandler core.ErrorHandler, state core.State, process
 		}
 	}()
 
+	// Start timed process sync go routine
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-flushCtx.Done():
+				return
+			case <-time.After(time.Duration(s.config.FlushFrequency) * time.Second):
+				err = flush(tmpWriter, processPipe)
+				if err != nil {
+					errorHandler(false, fmt.Errorf("issue flushing file: %s", err))
+				}
+			}
+		}
+	}()
+
 	wg.Wait()
+
+	// Flush any remaining data to pipeline before return
+	err = flush(tmpWriter, processPipe)
+	if err != nil {
+		errorHandler(false, fmt.Errorf("issue flushing file: %s", err))
+	}
 }
 
 func (s *sqsInput) Stop() {
@@ -175,4 +174,22 @@ func defaultConfig() Config {
 		PollFrequency:  20,
 		FlushFrequency: 300,
 	}
+}
+
+func flush(tmpFile *core.TmpWriter, processPipe chan<- core.PipelineResults) error {
+	// Rotate the temp writer
+	count, fileName, err := tmpFile.Rotate()
+	if err != nil {
+		return err
+	}
+
+	// Only send on if there are results
+	processPipe <- core.PipelineResults{
+		FilePath:    fileName,
+		ResultCount: count,
+		State:       nil,
+		RetryCount:  0,
+	}
+
+	return nil
 }
