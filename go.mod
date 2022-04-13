@@ -11,6 +11,7 @@ require (
 	github.com/google/cel-go v0.10.1
 	github.com/google/uuid v1.3.0
 	github.com/gookit/validate v1.3.1
+	github.com/influxdata/go-syslog/v3 v3.0.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5

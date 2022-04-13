@@ -13,7 +13,7 @@ var ProcessorName = "cel"
 
 type Config struct {
 	Rules  []string `json:"rules" validate:"required"`
-	Action string   `json:"action" validate:"oneof=accept reject"`
+	Action string   `json:"action" validate:"in:accept,reject"`
 }
 
 type celProcessor struct {
