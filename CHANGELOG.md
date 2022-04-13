@@ -1,3 +1,13 @@
+# [0.4.0](https://github.com/ThoronicLLC/collector/compare/v0.3.1...v0.4.0) (2022-04-13)
+
+
+### Features
+
+* **processor:** added key-value and CEF processor ([#49](https://github.com/ThoronicLLC/collector/issues/49)) ([9bbce68](https://github.com/ThoronicLLC/collector/commit/9bbce683468a201203e30c73c51e69b0e876ddaa))
+* **processor:** added syslog message processor ([#48](https://github.com/ThoronicLLC/collector/issues/48)) ([807e2cc](https://github.com/ThoronicLLC/collector/commit/807e2cc2355c5637b1228d6853f9ba7c4416276f))
+
+
+
 ## [0.3.1](https://github.com/ThoronicLLC/collector/compare/v0.3.0...v0.3.1) (2022-03-25)
 
 
