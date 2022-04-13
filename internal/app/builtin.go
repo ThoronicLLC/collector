@@ -12,6 +12,7 @@ import (
 	"github.com/ThoronicLLC/collector/internal/output/s3"
 	"github.com/ThoronicLLC/collector/internal/output/stdout"
 	"github.com/ThoronicLLC/collector/internal/processor/cel"
+	syslog_processor "github.com/ThoronicLLC/collector/internal/processor/syslog"
 	"github.com/ThoronicLLC/collector/pkg/core"
 )
 
@@ -26,7 +27,8 @@ func AddInternalInputs() map[string]core.InputHandler {
 
 func AddInternalProcessors() map[string]core.ProcessHandler {
 	return map[string]core.ProcessHandler{
-		cel.ProcessorName: cel.Handler(),
+		cel.ProcessorName:              cel.Handler(),
+		syslog_processor.ProcessorName: syslog_processor.Handler(),
 	}
 }
 
