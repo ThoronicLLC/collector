@@ -146,24 +146,26 @@ func (manager *Manager) processHandler(errorHandler core.ErrorHandler) {
 
 		// Loop through and run processors
 		for _, v := range manager.processors {
-			err := v.Process(currentFile, tmpWriter)
+			err = v.Process(currentFile, tmpWriter)
 			if err != nil {
-				errorHandler(false, err)
 				break
 			}
 
 			// Delete old results after each process step
-			err = os.Remove(currentFile)
+			err = removeIfExists(currentFile)
 			if err != nil {
-				errorHandler(false, err)
 				break
 			}
 
 			currentCount, currentFile, err = tmpWriter.Rotate()
 			if err != nil {
-				errorHandler(false, err)
 				break
 			}
+		}
+
+		if err != nil {
+			errorHandler(false, err)
+			continue
 		}
 
 		manager.outputPipe <- core.PipelineResults{
@@ -185,39 +187,19 @@ func (manager *Manager) outputHandler() {
 		// Setup current file tracker
 		currentFile := res.FilePath
 
-		// Send data to outputs
-		outputError := false
-		anyWritten := false
+		// Send data to outputs, if they fail, continue
 		var err error
 		for _, v := range manager.outputs {
 			// Start writing results to output
 			_, err = v.Write(currentFile)
 			if err != nil {
-				outputError = true
 				manager.errorHandler(false, err)
 				continue
 			}
-			anyWritten = true
-		}
-
-		// If we have an output error and no output was written to, sleep and retry in a minute
-		// else, at least one output was written to, we must be lossy
-		//
-		// Note: in order to guarantee at least once delivery, only one output should be set for each instance
-		if outputError && !anyWritten && res.RetryCount < 3 {
-			log.Debugf("output failed to process %d results for: %s; retrying...", res.ResultCount, manager.id)
-			newRes := res
-			newRes.RetryCount = res.RetryCount + 1
-			manager.outputPipe <- newRes
-			continue
-		} else if outputError {
-			log.Debugf("output failed to process %d results for: %s", res.ResultCount, manager.id)
-			manager.failureStatus(err)
-			continue
 		}
 
 		// Delete old results
-		err = os.Remove(currentFile)
+		err = removeIfExists(currentFile)
 		if err != nil {
 			manager.errorHandler(false, err)
 		}
@@ -250,4 +232,24 @@ func (manager *Manager) stateHandler() {
 			continue
 		}
 	}
+}
+
+func removeIfExists(filePath string) error {
+	if filePath == "" {
+		return nil
+	}
+
+	if fileExists(filePath) {
+		return os.Remove(filePath)
+	}
+
+	return nil
+}
+
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
 }

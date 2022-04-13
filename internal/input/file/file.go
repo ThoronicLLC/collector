@@ -101,7 +101,7 @@ func (input *fileInput) Run(errorHandler core.ErrorHandler, state core.State, pr
 			}
 
 			// Get results file name and size
-			path := tmpFile.CurrentFile().Name()
+			path := tmpFile.Name()
 			linesWritten := tmpFile.WriteCount
 			err = tmpFile.Close()
 			if err != nil {
