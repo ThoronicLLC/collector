@@ -6,12 +6,14 @@ require (
 	cloud.google.com/go/pubsub v1.19.0
 	cloud.google.com/go/storage v1.10.0
 	github.com/aws/aws-sdk-go v1.43.18
+	github.com/dlclark/regexp2 v1.4.0
 	github.com/go-resty/resty/v2 v2.7.0
 	github.com/golang/protobuf v1.5.2
 	github.com/google/cel-go v0.10.1
 	github.com/google/uuid v1.3.0
 	github.com/gookit/validate v1.3.1
 	github.com/influxdata/go-syslog/v3 v3.0.0
+	github.com/jjeffery/kv v0.8.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5

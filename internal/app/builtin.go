@@ -1,44 +1,49 @@
 package app
 
 import (
-	filein "github.com/ThoronicLLC/collector/internal/input/file"
-	"github.com/ThoronicLLC/collector/internal/input/msgraph"
-	pubsubin "github.com/ThoronicLLC/collector/internal/input/pubsub"
-	"github.com/ThoronicLLC/collector/internal/input/syslog"
-	fileout "github.com/ThoronicLLC/collector/internal/output/file"
-	"github.com/ThoronicLLC/collector/internal/output/gcs"
-	"github.com/ThoronicLLC/collector/internal/output/log_analytics"
-	pubsubout "github.com/ThoronicLLC/collector/internal/output/pubsub"
-	"github.com/ThoronicLLC/collector/internal/output/s3"
-	"github.com/ThoronicLLC/collector/internal/output/stdout"
-	"github.com/ThoronicLLC/collector/internal/processor/cel"
-	syslog_processor "github.com/ThoronicLLC/collector/internal/processor/syslog"
 	"github.com/ThoronicLLC/collector/pkg/core"
+
+	file_input "github.com/ThoronicLLC/collector/internal/input/file"
+	msgraph_input "github.com/ThoronicLLC/collector/internal/input/msgraph"
+	pubsub_input "github.com/ThoronicLLC/collector/internal/input/pubsub"
+	syslog_input "github.com/ThoronicLLC/collector/internal/input/syslog"
+
+	cel_processor "github.com/ThoronicLLC/collector/internal/processor/cel"
+	kv_processor "github.com/ThoronicLLC/collector/internal/processor/kv"
+	syslog_processor "github.com/ThoronicLLC/collector/internal/processor/syslog"
+
+	file_output "github.com/ThoronicLLC/collector/internal/output/file"
+	gcs_output "github.com/ThoronicLLC/collector/internal/output/gcs"
+	log_analytics_output "github.com/ThoronicLLC/collector/internal/output/log_analytics"
+	pubsub_output "github.com/ThoronicLLC/collector/internal/output/pubsub"
+	s3_output "github.com/ThoronicLLC/collector/internal/output/s3"
+	stdout_output "github.com/ThoronicLLC/collector/internal/output/stdout"
 )
 
 func AddInternalInputs() map[string]core.InputHandler {
 	return map[string]core.InputHandler{
-		filein.InputName:   filein.Handler(),
-		pubsubin.InputName: pubsubin.Handler(),
-		syslog.InputName:   syslog.Handler(),
-		msgraph.InputName:  msgraph.Handler(),
+		file_input.InputName:    file_input.Handler(),
+		pubsub_input.InputName:  pubsub_input.Handler(),
+		syslog_input.InputName:  syslog_input.Handler(),
+		msgraph_input.InputName: msgraph_input.Handler(),
 	}
 }
 
 func AddInternalProcessors() map[string]core.ProcessHandler {
 	return map[string]core.ProcessHandler{
-		cel.ProcessorName:              cel.Handler(),
+		cel_processor.ProcessorName:    cel_processor.Handler(),
 		syslog_processor.ProcessorName: syslog_processor.Handler(),
+		kv_processor.ProcessorName:     kv_processor.Handler(),
 	}
 }
 
 func AddInternalOutputs() map[string]core.OutputHandler {
 	return map[string]core.OutputHandler{
-		fileout.OutputName:       fileout.Handler(),
-		stdout.OutputName:        stdout.Handler(),
-		s3.OutputName:            s3.Handler(),
-		gcs.OutputName:           gcs.Handler(),
-		log_analytics.OutputName: log_analytics.Handler(),
-		pubsubout.OutputName:     pubsubout.Handler(),
+		file_output.OutputName:          file_output.Handler(),
+		stdout_output.OutputName:        stdout_output.Handler(),
+		s3_output.OutputName:            s3_output.Handler(),
+		gcs_output.OutputName:           gcs_output.Handler(),
+		log_analytics_output.OutputName: log_analytics_output.Handler(),
+		pubsub_output.OutputName:        pubsub_output.Handler(),
 	}
 }
