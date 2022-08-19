@@ -15,13 +15,11 @@ import (
 var _ io.WriteCloser = (*TmpWriter)(nil)
 
 type TmpWriter struct {
-	size          int64
-	file          *os.File
-	fileOpen      bool
-	mu            sync.Mutex
-	previousFile  *os.File
-	previousCount int
-	WriteCount    int
+	size       int64
+	file       *os.File
+	fileOpen   bool
+	mu         sync.Mutex
+	WriteCount int
 
 	millCh    chan bool
 	startMill sync.Once
@@ -34,8 +32,7 @@ var (
 
 func NewTmpWriter() (*TmpWriter, error) {
 	writer := &TmpWriter{}
-	err := writer.openNew()
-	return writer, err
+	return writer, nil
 }
 
 // Write implements io.Writer.
@@ -54,14 +51,14 @@ func (l *TmpWriter) WriteString(s string) (n int, err error) {
 }
 
 func (l *TmpWriter) write(p []byte) (n int, err error) {
-	if l.file == nil {
-		if err = l.openExistingOrNew(); err != nil {
-			return 0, err
-		}
+	if len(p) == 0 || string(p) == "" {
+		return 0, nil
 	}
 
-	if len(p) == 0 {
-		return 0, nil
+	if l.file == nil {
+		if err = l.openNew(); err != nil {
+			return 0, err
+		}
 	}
 
 	// Append newline to byte
@@ -82,7 +79,7 @@ func (l *TmpWriter) Close() error {
 	return l.close()
 }
 
-// close closes the file if it is open.
+// close syncs and closes the file if it is open.
 func (l *TmpWriter) close() error {
 	if l.file == nil {
 		l.fileOpen = false
@@ -99,8 +96,6 @@ func (l *TmpWriter) close() error {
 		return err
 	}
 
-	l.previousFile = l.file
-	l.previousCount = l.WriteCount
 	l.file = nil
 	l.fileOpen = false
 	return err
@@ -112,15 +107,15 @@ func (l *TmpWriter) Rotate() (int, string, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
+	// Handle empty file
+	if l.file == nil {
+		return 0, "", nil
+	}
+
 	// Get file name and write count
 	rotatedFileName := l.file.Name()
 	rotatedWriteCount := l.WriteCount
-
-	// Do not rotate if there is no writes to the file
-	if rotatedWriteCount > 0 {
-		return rotatedWriteCount, rotatedFileName, l.rotate()
-	}
-	return rotatedWriteCount, rotatedFileName, nil
+	return rotatedWriteCount, rotatedFileName, l.rotate()
 }
 
 // Size returns the current file size
@@ -133,47 +128,17 @@ func (l *TmpWriter) rotate() error {
 	if err := l.close(); err != nil {
 		return err
 	}
-	if err := l.openNew(); err != nil {
-		return err
-	}
 	return nil
 }
 
 // openNew opens a new log file for writing. This methods assumes the last file has already been closed.
 func (l *TmpWriter) openNew() error {
-	// we use truncate here because this should only get called when we've moved
-	// the file ourselves. if someone else creates the file in the meantime,
-	// just wipe out the contents.
 	f, err := ioutil.TempFile(os.TempDir(), randomStringWithLength(32))
 	if err != nil {
 		return fmt.Errorf("can't open new logfile: %s", err)
 	}
 	l.file = f
 	l.size = 0
-	l.fileOpen = true
-	l.WriteCount = 0
-	return nil
-}
-
-// openExistingOrNew opens the logfile if it exists.  If there is no such file, a new file is created.
-func (l *TmpWriter) openExistingOrNew() error {
-	filename := l.filename()
-	info, err := osStat(filename)
-	if os.IsNotExist(err) {
-		return l.openNew()
-	}
-	if err != nil {
-		return fmt.Errorf("error getting log file info: %s", err)
-	}
-
-	file, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		// if we fail to open the old log file for some reason, just ignore
-		// it and open a new log file.
-		return l.openNew()
-	}
-	l.file = file
-	l.size = info.Size()
 	l.fileOpen = true
 	l.WriteCount = 0
 	return nil
@@ -187,58 +152,19 @@ func (l *TmpWriter) filename() string {
 	return name
 }
 
-// CurrentFile returns current log file pointer
-func (l *TmpWriter) CurrentFile() *os.File {
-	return l.file
-}
-
-// PreviousFile returns previous log file pointer
-func (l *TmpWriter) PreviousFile() *os.File {
-	return l.previousFile
-}
-
-// PreviousCount returns previous file write count
-func (l *TmpWriter) PreviousCount() int {
-	return l.previousCount
-}
-
-// DeleteCurrentFile deletes the current log file and update struct
-func (l *TmpWriter) DeleteCurrentFile() (err error) {
-	if l.file != nil && fileExists(l.file.Name()) {
-		if err = os.Remove(l.file.Name()); err != nil {
-			return err
-		}
+// Name returns current log file pointer
+func (l *TmpWriter) Name() string {
+	if l.file != nil {
+		return l.file.Name()
 	}
-	l.file = nil
-	l.fileOpen = false
-	return nil
-}
 
-// DeletePreviousFile deletes the previous log file and update struct
-func (l *TmpWriter) DeletePreviousFile() (err error) {
-	if l.previousFile != nil && fileExists(l.previousFile.Name()) {
-		if err = os.Remove(l.previousFile.Name()); err != nil {
-			return err
-		}
-	}
-	l.previousFile = nil
-	return nil
+	return ""
 }
 
 // Exit closes the open file and cleans up any current or previous log files
 func (l *TmpWriter) Exit() (err error) {
 	if l.fileOpen {
 		if err = l.close(); err != nil {
-			return err
-		}
-	}
-	if l.file != nil {
-		if err = l.DeleteCurrentFile(); err != nil {
-			return err
-		}
-	}
-	if l.previousFile != nil {
-		if err = l.DeletePreviousFile(); err != nil {
 			return err
 		}
 	}
@@ -255,13 +181,4 @@ func randomStringWithLength(length int) string {
 		b[i] = charset[seededRand.Intn(len(charset))]
 	}
 	return string(b)
-}
-
-// fileExists will return true if the file at the supplied path exists
-func fileExists(path string) bool {
-	info, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return !info.IsDir()
 }

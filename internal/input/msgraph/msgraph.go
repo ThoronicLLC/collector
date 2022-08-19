@@ -186,7 +186,7 @@ func (input *msgraphInput) Run(errorHandler core.ErrorHandler, state core.State,
 			}
 
 			// Get results file name and size
-			path := tmpFile.CurrentFile().Name()
+			path := tmpFile.Name()
 			linesWritten := tmpFile.WriteCount
 			err = tmpFile.Close()
 			if err != nil {
