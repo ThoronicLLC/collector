@@ -1,3 +1,12 @@
+## [0.4.1](https://github.com/ThoronicLLC/collector/compare/v0.4.0...v0.4.1) (2022-09-08)
+
+
+### Bug Fixes
+
+* refactor tmp_writer to not open files until data is being written ([#51](https://github.com/ThoronicLLC/collector/issues/51)) ([1228c79](https://github.com/ThoronicLLC/collector/commit/1228c798f57ac211da7ec733b02e83b7e8b73c80))
+
+
+
 # [0.4.0](https://github.com/ThoronicLLC/collector/compare/v0.3.1...v0.4.0) (2022-04-13)
 
 
