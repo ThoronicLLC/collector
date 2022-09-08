@@ -7,9 +7,18 @@ assignees: ''
 
 ---
 
-## Feature
+---
+name: Feature Request
+about: Suggest an idea for this project
+title: ''
+labels: enhancement
+assignees: ''
 
-I would like [feature]
+---
+
+## User Story
+
+As a [role], I want to [actions] (so that [benefit]).
 
 ## Acceptance Criteria
 
@@ -19,6 +28,7 @@ I would like [feature]
 
 ## Resources
 
+* Mockups or examples
 * Available Documentation
 * Links and References
 
