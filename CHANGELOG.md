@@ -1,3 +1,12 @@
+# [0.6.0](https://github.com/ThoronicLLC/collector/compare/v0.5.0...v0.6.0) (2022-12-21)
+
+
+### Features
+
+* added optional gzip compression to s3 output ([#55](https://github.com/ThoronicLLC/collector/issues/55)) ([4afd84a](https://github.com/ThoronicLLC/collector/commit/4afd84ad1af1c30a573aec77fdefab6d060c3efe))
+
+
+
 # [0.5.0](https://github.com/ThoronicLLC/collector/compare/v0.4.1...v0.5.0) (2022-12-21)
 
 
@@ -33,20 +42,6 @@
 
 * correctly flush sqs input results when closed ([#45](https://github.com/ThoronicLLC/collector/issues/45)) ([7184a73](https://github.com/ThoronicLLC/collector/commit/7184a739a63cae55b0a890496658e483e48d20b7))
 * **input:** correctly flush data when pubsub input is closed ([#42](https://github.com/ThoronicLLC/collector/issues/42)) ([6374665](https://github.com/ThoronicLLC/collector/commit/637466579a04876803e183dcb163ca1c57b2f1d8))
-
-
-
-# [0.3.0](https://github.com/ThoronicLLC/collector/compare/v0.2.0...v0.3.0) (2022-03-23)
-
-
-### Bug Fixes
-
-* prevent junk directories existing in release zip ([#37](https://github.com/ThoronicLLC/collector/issues/37)) ([6b0d835](https://github.com/ThoronicLLC/collector/commit/6b0d8350717ce916abcc198ee6fe8fca1d975727))
-
-
-### Features
-
-* added file output plugin ([#39](https://github.com/ThoronicLLC/collector/issues/39)) ([37c8b78](https://github.com/ThoronicLLC/collector/commit/37c8b7878d5d70dac3b2c070664954a21415d62b))
 
 
 
