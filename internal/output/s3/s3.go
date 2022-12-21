@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"github.com/ThoronicLLC/collector/pkg/core"
@@ -9,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"io"
 	"os"
 	"time"
 )
@@ -22,6 +24,7 @@ type Config struct {
 	SecretAccessKey string `json:"secret_access_key" validate:"required"`
 	Path            string `json:"path" validate:"required"`
 	MaxRetries      int    `json:"max_retries" validate:"int|min:0"`
+	GZip            bool   `json:"gzip" validate:"bool"`
 }
 
 type s3Output struct {
@@ -33,6 +36,7 @@ func Handler() core.OutputHandler {
 		// Set config defaults
 		conf := Config{
 			MaxRetries: 3,
+			GZip:       false,
 		}
 
 		// Unmarshal config
@@ -54,8 +58,60 @@ func Handler() core.OutputHandler {
 }
 
 func (s *s3Output) Write(inputFile string) (int, error) {
+	currentFile := inputFile
+
+	// Handle gzip option
+	if s.config.GZip {
+		// Create a temp file
+		newTmpFile, err := os.CreateTemp("", "gzip-output-")
+		if err != nil {
+			return 0, fmt.Errorf("unable to create temp file for gzip: %w", err)
+		}
+		defer os.Remove(newTmpFile.Name())
+
+		// Set up a new gzip writer and file reader
+		gzipWriter := gzip.NewWriter(newTmpFile)
+		tmpFs, err := os.Open(inputFile)
+		if err != nil {
+			return 0, fmt.Errorf("unable to open input file for gzip: %w", err)
+		}
+
+		// Copy the file to the gzip writer
+		_, err = io.Copy(gzipWriter, tmpFs)
+		if err != nil {
+			return 0, fmt.Errorf("unable to copy input file to gzip: %w", err)
+		}
+
+		// Close the gzip writer
+		err = gzipWriter.Close()
+		if err != nil {
+			return 0, fmt.Errorf("unable to close gzip writer: %w", err)
+		}
+
+		// Close the file reader
+		err = tmpFs.Close()
+		if err != nil {
+			return 0, fmt.Errorf("unable to close input file: %w", err)
+		}
+
+		// Sync the temp file
+		err = newTmpFile.Sync()
+		if err != nil {
+			return 0, fmt.Errorf("unable to sync temp file: %w", err)
+		}
+
+		// Set the current file to the temp file
+		currentFile = newTmpFile.Name()
+
+		// Close the temp file
+		err = newTmpFile.Close()
+		if err != nil {
+			return 0, fmt.Errorf("unable to close temp file: %w", err)
+		}
+	}
+
 	// Open file
-	fs, err := os.Open(inputFile)
+	fs, err := os.Open(currentFile)
 	if err != nil {
 		return 0, fmt.Errorf("issue opening file: %s", err)
 	}
@@ -100,12 +156,21 @@ func (s *s3Output) Write(inputFile string) (int, error) {
 
 	// Build file name
 	fileName := variable_replacer.VariableReplacer(currentTime, s.config.Path)
+	if s.config.GZip {
+		fileName = fileName + ".gz"
+	}
 
 	// Create upload input
 	uploadInput := &s3manager.UploadInput{
 		Bucket: aws.String(s.config.Bucket),
 		Key:    aws.String(fileName),
 		Body:   fs,
+	}
+
+	// Set content encoding if gzip
+	if s.config.GZip {
+		uploadInput.ContentEncoding = aws.String("gzip")
+		uploadInput.ContentType = aws.String("text/plain")
 	}
 
 	// Upload the file to S3.
