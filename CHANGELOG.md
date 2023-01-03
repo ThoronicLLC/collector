@@ -1,3 +1,12 @@
+# [0.7.0](https://github.com/ThoronicLLC/collector/compare/v0.6.0...v0.7.0) (2023-01-03)
+
+
+### Features
+
+* added support for extracting kafka headers and inserting into message ([#57](https://github.com/ThoronicLLC/collector/issues/57)) ([2b6d590](https://github.com/ThoronicLLC/collector/commit/2b6d5901c866d60f8d8ff72f5b7f417bc2508d0f))
+
+
+
 # [0.6.0](https://github.com/ThoronicLLC/collector/compare/v0.5.0...v0.6.0) (2022-12-21)
 
 
@@ -32,16 +41,6 @@
 
 * **processor:** added key-value and CEF processor ([#49](https://github.com/ThoronicLLC/collector/issues/49)) ([9bbce68](https://github.com/ThoronicLLC/collector/commit/9bbce683468a201203e30c73c51e69b0e876ddaa))
 * **processor:** added syslog message processor ([#48](https://github.com/ThoronicLLC/collector/issues/48)) ([807e2cc](https://github.com/ThoronicLLC/collector/commit/807e2cc2355c5637b1228d6853f9ba7c4416276f))
-
-
-
-## [0.3.1](https://github.com/ThoronicLLC/collector/compare/v0.3.0...v0.3.1) (2022-03-25)
-
-
-### Bug Fixes
-
-* correctly flush sqs input results when closed ([#45](https://github.com/ThoronicLLC/collector/issues/45)) ([7184a73](https://github.com/ThoronicLLC/collector/commit/7184a739a63cae55b0a890496658e483e48d20b7))
-* **input:** correctly flush data when pubsub input is closed ([#42](https://github.com/ThoronicLLC/collector/issues/42)) ([6374665](https://github.com/ThoronicLLC/collector/commit/637466579a04876803e183dcb163ca1c57b2f1d8))
 
 
 
