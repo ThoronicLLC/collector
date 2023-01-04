@@ -1,3 +1,12 @@
+## [0.7.1](https://github.com/ThoronicLLC/collector/compare/v0.7.0...v0.7.1) (2023-01-04)
+
+
+### Bug Fixes
+
+* fixed parsing kafka input message headers when non JSON types ([#59](https://github.com/ThoronicLLC/collector/issues/59)) ([3d797e8](https://github.com/ThoronicLLC/collector/commit/3d797e8f2aea4550584c3e2cbf7e070602c755a6))
+
+
+
 # [0.7.0](https://github.com/ThoronicLLC/collector/compare/v0.6.0...v0.7.0) (2023-01-03)
 
 
@@ -31,16 +40,6 @@
 ### Bug Fixes
 
 * refactor tmp_writer to not open files until data is being written ([#51](https://github.com/ThoronicLLC/collector/issues/51)) ([1228c79](https://github.com/ThoronicLLC/collector/commit/1228c798f57ac211da7ec733b02e83b7e8b73c80))
-
-
-
-# [0.4.0](https://github.com/ThoronicLLC/collector/compare/v0.3.1...v0.4.0) (2022-04-13)
-
-
-### Features
-
-* **processor:** added key-value and CEF processor ([#49](https://github.com/ThoronicLLC/collector/issues/49)) ([9bbce68](https://github.com/ThoronicLLC/collector/commit/9bbce683468a201203e30c73c51e69b0e876ddaa))
-* **processor:** added syslog message processor ([#48](https://github.com/ThoronicLLC/collector/issues/48)) ([807e2cc](https://github.com/ThoronicLLC/collector/commit/807e2cc2355c5637b1228d6853f9ba7c4416276f))
 
 
 
