@@ -1,3 +1,17 @@
+# [0.8.0](https://github.com/ThoronicLLC/collector/compare/v0.7.1...v0.8.0) (2024-01-11)
+
+
+### Bug Fixes
+
+* updated docker to use Go 1.21 ([3312e90](https://github.com/ThoronicLLC/collector/commit/3312e9012758adf971aa5b9ba19b7fae21086ddd))
+
+
+### Features
+
+* added HTTP output ([#62](https://github.com/ThoronicLLC/collector/issues/62)) ([89cafd1](https://github.com/ThoronicLLC/collector/commit/89cafd17b2976590fdb3bc1cf49f488041806521))
+
+
+
 ## [0.7.1](https://github.com/ThoronicLLC/collector/compare/v0.7.0...v0.7.1) (2023-01-04)
 
 
@@ -31,15 +45,6 @@
 ### Features
 
 * added kafka input and output plugins ([#54](https://github.com/ThoronicLLC/collector/issues/54)) ([e14403f](https://github.com/ThoronicLLC/collector/commit/e14403f2bd3b6592af9193961bb125a22443605e))
-
-
-
-## [0.4.1](https://github.com/ThoronicLLC/collector/compare/v0.4.0...v0.4.1) (2022-09-08)
-
-
-### Bug Fixes
-
-* refactor tmp_writer to not open files until data is being written ([#51](https://github.com/ThoronicLLC/collector/issues/51)) ([1228c79](https://github.com/ThoronicLLC/collector/commit/1228c798f57ac211da7ec733b02e83b7e8b73c80))
 
 
 
