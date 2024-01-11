@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 
 # Accept the Go version for the image to be set as a build argument.
-# Default to Go 1.18
-ARG GO_VERSION=1.18
+# Default to Go 1.21
+ARG GO_VERSION=1.21
 
 # Build stage: Build the binary
 FROM golang:${GO_VERSION}-alpine as golang
