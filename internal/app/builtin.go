@@ -1,26 +1,27 @@
 package app
 
 import (
-  "github.com/ThoronicLLC/collector/pkg/core"
+	"github.com/ThoronicLLC/collector/pkg/core"
 
-  file_input "github.com/ThoronicLLC/collector/internal/input/file"
-  kafka_input "github.com/ThoronicLLC/collector/internal/input/kafka"
-  msgraph_input "github.com/ThoronicLLC/collector/internal/input/msgraph"
-  pubsub_input "github.com/ThoronicLLC/collector/internal/input/pubsub"
-  syslog_input "github.com/ThoronicLLC/collector/internal/input/syslog"
+	file_input "github.com/ThoronicLLC/collector/internal/input/file"
+	kafka_input "github.com/ThoronicLLC/collector/internal/input/kafka"
+	msgraph_input "github.com/ThoronicLLC/collector/internal/input/msgraph"
+	pubsub_input "github.com/ThoronicLLC/collector/internal/input/pubsub"
+	syslog_input "github.com/ThoronicLLC/collector/internal/input/syslog"
 
-  cel_processor "github.com/ThoronicLLC/collector/internal/processor/cel"
-  kv_processor "github.com/ThoronicLLC/collector/internal/processor/kv"
-  syslog_processor "github.com/ThoronicLLC/collector/internal/processor/syslog"
+	cel_processor "github.com/ThoronicLLC/collector/internal/processor/cel"
+	json_processor "github.com/ThoronicLLC/collector/internal/processor/json"
+	kv_processor "github.com/ThoronicLLC/collector/internal/processor/kv"
+	syslog_processor "github.com/ThoronicLLC/collector/internal/processor/syslog"
 
-  file_output "github.com/ThoronicLLC/collector/internal/output/file"
-  gcs_output "github.com/ThoronicLLC/collector/internal/output/gcs"
-  http_output "github.com/ThoronicLLC/collector/internal/output/http"
-  kafka_output "github.com/ThoronicLLC/collector/internal/output/kafka"
-  log_analytics_output "github.com/ThoronicLLC/collector/internal/output/log_analytics"
-  pubsub_output "github.com/ThoronicLLC/collector/internal/output/pubsub"
-  s3_output "github.com/ThoronicLLC/collector/internal/output/s3"
-  stdout_output "github.com/ThoronicLLC/collector/internal/output/stdout"
+	file_output "github.com/ThoronicLLC/collector/internal/output/file"
+	gcs_output "github.com/ThoronicLLC/collector/internal/output/gcs"
+	http_output "github.com/ThoronicLLC/collector/internal/output/http"
+	kafka_output "github.com/ThoronicLLC/collector/internal/output/kafka"
+	log_analytics_output "github.com/ThoronicLLC/collector/internal/output/log_analytics"
+	pubsub_output "github.com/ThoronicLLC/collector/internal/output/pubsub"
+	s3_output "github.com/ThoronicLLC/collector/internal/output/s3"
+	stdout_output "github.com/ThoronicLLC/collector/internal/output/stdout"
 )
 
 func AddInternalInputs() map[string]core.InputHandler {
@@ -38,6 +39,7 @@ func AddInternalProcessors() map[string]core.ProcessHandler {
 		cel_processor.ProcessorName:    cel_processor.Handler(),
 		syslog_processor.ProcessorName: syslog_processor.Handler(),
 		kv_processor.ProcessorName:     kv_processor.Handler(),
+		json_processor.ProcessorName:   json_processor.Handler(),
 	}
 }
 

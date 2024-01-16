@@ -22,6 +22,7 @@ require (
 	github.com/spf13/viper v1.10.1
 	github.com/stretchr/testify v1.8.0
 	github.com/tidwall/pretty v1.2.0
+	github.com/tidwall/sjson v1.2.5
 	google.golang.org/api v0.70.0
 	gopkg.in/mcuadros/go-syslog.v2 v2.3.0
 )
@@ -60,6 +61,8 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/stoewer/go-strcase v1.2.0 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
+	github.com/tidwall/gjson v1.14.2 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
 	github.com/xdg/scram v1.0.5 // indirect
 	github.com/xdg/stringprep v1.0.3 // indirect
 	go.opencensus.io v0.23.0 // indirect
