@@ -1,3 +1,12 @@
+# [0.9.0](https://github.com/ThoronicLLC/collector/compare/v0.8.0...v0.9.0) (2024-01-16)
+
+
+### Features
+
+* added json processor ([#64](https://github.com/ThoronicLLC/collector/issues/64)) ([3052aec](https://github.com/ThoronicLLC/collector/commit/3052aecece051f0d31d0e3708e2f554b53da1e0c))
+
+
+
 # [0.8.0](https://github.com/ThoronicLLC/collector/compare/v0.7.1...v0.8.0) (2024-01-11)
 
 
@@ -36,15 +45,6 @@
 ### Features
 
 * added optional gzip compression to s3 output ([#55](https://github.com/ThoronicLLC/collector/issues/55)) ([4afd84a](https://github.com/ThoronicLLC/collector/commit/4afd84ad1af1c30a573aec77fdefab6d060c3efe))
-
-
-
-# [0.5.0](https://github.com/ThoronicLLC/collector/compare/v0.4.1...v0.5.0) (2022-12-21)
-
-
-### Features
-
-* added kafka input and output plugins ([#54](https://github.com/ThoronicLLC/collector/issues/54)) ([e14403f](https://github.com/ThoronicLLC/collector/commit/e14403f2bd3b6592af9193961bb125a22443605e))
 
 
 
